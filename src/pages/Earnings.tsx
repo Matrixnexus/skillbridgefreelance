@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,25 +14,34 @@ import {
 
 interface Transaction {
   id: string;
-  type: string;
+  type: 'earning' | 'payout' | 'subscription';
   amount: number;
   description: string | null;
   status: string;
   created_at: string;
 }
 
+const MIN_WITHDRAWAL = 1000;
+const WITHDRAWAL_INTERVAL_DAYS = 14;
+
 const Earnings = () => {
   const { user, profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /* ───────────────────────────── AUTH ───────────────────────────── */
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/auth');
+  }, [authLoading, user, navigate]);
+
+  /* ───────────────────────── FETCH TXNS ───────────────────────── */
   useEffect(() => {
     const fetchTransactions = async () => {
       if (!user) return;
@@ -41,18 +50,86 @@ const Earnings = () => {
         .from('transactions')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
 
-      if (data) {
-        setTransactions(data);
-      }
+      setTransactions(data || []);
       setIsLoading(false);
     };
 
     fetchTransactions();
   }, [user]);
 
+  /* ───────────────────── WITHDRAW HELPERS ───────────────────── */
+  const lastWithdrawalDate = () => {
+    const last = transactions.find(t => t.type === 'payout');
+    return last ? new Date(last.created_at) : null;
+  };
+
+  const canWithdrawByDate = () => {
+    const lastDate = lastWithdrawalDate();
+    if (!lastDate) return true;
+
+    const diff =
+      (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+    return diff >= WITHDRAWAL_INTERVAL_DAYS;
+  };
+
+  /* ───────────────────── WITHDRAW ACTION ───────────────────── */
+  const handleWithdrawRequest = async () => {
+    setWithdrawError(null);
+    setWithdrawSuccess(null);
+
+    const amount = Number(withdrawAmount);
+
+    if (!amount || amount <= 0) {
+      setWithdrawError('Enter a valid withdrawal amount.');
+      return;
+    }
+
+    if (amount < MIN_WITHDRAWAL) {
+      setWithdrawError('Minimum withdrawal is $1,000 USD.');
+      return;
+    }
+
+    if (!canWithdrawByDate()) {
+      setWithdrawError('Withdrawals are allowed only once every 14 days.');
+      return;
+    }
+
+    if (!profile || amount > (profile.approved_earnings || 0)) {
+      setWithdrawError('Insufficient approved earnings.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const res = await fetch('/api/request-withdrawal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          email: user?.email,
+          amount,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      setWithdrawSuccess(
+        'Withdrawal request submitted. Admin review in progress.'
+      );
+      setWithdrawAmount('');
+    } catch {
+      setWithdrawError(
+        'Request failed due to unmet withdrawal requirements.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /* ───────────────────────── UI HELPERS ───────────────────────── */
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'earning':
@@ -66,23 +143,10 @@ const Earnings = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400 bg-green-400/10';
-      case 'pending':
-        return 'text-yellow-400 bg-yellow-400/10';
-      case 'failed':
-        return 'text-red-400 bg-red-400/10';
-      default:
-        return 'text-muted-foreground bg-secondary';
-    }
-  };
-
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -90,194 +154,106 @@ const Earnings = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
+        {/* HEADER */}
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Earnings</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your earnings and payment history
+          <h1 className="text-3xl font-bold">Earnings</h1>
+          <p className="text-muted-foreground">
+            Manage your income and withdrawals
           </p>
         </div>
 
-        {/* Earnings Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-                <DollarSign className="w-7 h-7 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Earnings</p>
-                <p className="text-3xl font-bold text-foreground">
-                  ${profile?.total_earnings?.toFixed(2) || '0.00'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-yellow-400/10 flex items-center justify-center">
-                <Clock className="w-7 h-7 text-yellow-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Earnings</p>
-                <p className="text-3xl font-bold text-foreground">
-                  ${profile?.pending_earnings?.toFixed(2) || '0.00'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-green-400/10 flex items-center justify-center">
-                <CheckCircle className="w-7 h-7 text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Approved Earnings</p>
-                <p className="text-3xl font-bold text-foreground">
-                  ${profile?.approved_earnings?.toFixed(2) || '0.00'}
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* STATS */}
+        <div className="grid md:grid-cols-3 gap-6">
+          <StatCard
+            icon={<DollarSign />}
+            label="Total Earnings"
+            value={`$${profile?.total_earnings?.toFixed(2) || '0.00'}`}
+          />
+          <StatCard
+            icon={<Clock />}
+            label="Pending"
+            value={`$${profile?.pending_earnings?.toFixed(2) || '0.00'}`}
+          />
+          <StatCard
+            icon={<CheckCircle />}
+            label="Approved"
+            value={`$${profile?.approved_earnings?.toFixed(2) || '0.00'}`}
+          />
         </div>
 
-        {/* Earnings Breakdown */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* How Payments Work */}
-          <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">How Payments Work</h2>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-medium">1</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Submit Work</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Complete and submit tasks for review
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-medium">2</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Admin Review</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Our team reviews your submission for quality
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-medium">3</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Approval & Payment</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Approved work earnings are added to your balance
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-medium">4</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Withdrawal</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Request payout based on your membership tier schedule
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* WITHDRAWAL */}
+        <div className="glass-card p-6 max-w-lg">
+          <h2 className="text-lg font-semibold mb-4">Request Withdrawal</h2>
 
-          {/* Payout Schedule */}
-          <div className="glass-card p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Payout Schedule</h2>
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-secondary/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-foreground">Regular Members</span>
-                  <span className="text-sm text-muted-foreground">Weekly</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Payouts processed every Friday
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-foreground">Pro Members</span>
-                  <span className="text-sm text-primary">Bi-weekly</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Payouts processed every other Wednesday
-                </p>
-              </div>
-              <div className="p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/20">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-foreground">VIP Members</span>
-                  <span className="text-sm text-yellow-400">Weekly Instant</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Instant payouts every Friday with priority processing
-                </p>
-              </div>
-            </div>
-          </div>
+          <input
+            type="number"
+            placeholder="Amount in USD"
+            value={withdrawAmount}
+            onChange={e => setWithdrawAmount(e.target.value)}
+            className="w-full px-4 py-2 mb-3 rounded-lg bg-secondary border border-border"
+          />
+
+          {withdrawError && (
+            <p className="text-sm text-red-400">{withdrawError}</p>
+          )}
+
+          {withdrawSuccess && (
+            <p className="text-sm text-green-400">{withdrawSuccess}</p>
+          )}
+
+          <button
+            onClick={handleWithdrawRequest}
+            disabled={isSubmitting}
+            className="mt-3 px-6 py-2 bg-primary rounded-lg text-primary-foreground font-medium disabled:opacity-50"
+          >
+            {isSubmitting ? 'Submitting...' : 'Request Withdrawal'}
+          </button>
         </div>
 
-        {/* Transaction History */}
+        {/* POLICY */}
         <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Transaction History</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            Withdrawal Policy – Economic Rationale
+          </h2>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
+            <li>Compliance with global financial and AML regulations</li>
+            <li>Ensures sustainable platform cash flow</li>
+            <li>Reduces excessive banking and processing fees</li>
+            <li>Prevents fraud and automated payout abuse</li>
+            <li>Aligns with international settlement cycles</li>
+          </ul>
+        </div>
+
+        {/* TRANSACTIONS */}
+        <div className="glass-card p-6">
+          <h2 className="text-lg font-semibold mb-4">Transaction History</h2>
+
           {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-secondary/50 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : transactions.length > 0 ? (
+            <p className="text-muted-foreground">Loading transactions...</p>
+          ) : transactions.length === 0 ? (
+            <p className="text-muted-foreground">No transactions yet.</p>
+          ) : (
             <div className="space-y-3">
-              {transactions.map((transaction) => (
+              {transactions.map(tx => (
                 <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/30"
+                  key={tx.id}
+                  className="flex justify-between items-center p-4 bg-secondary/30 rounded-lg"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
-                      {getTransactionIcon(transaction.type)}
-                    </div>
+                  <div className="flex items-center gap-3">
+                    {getTransactionIcon(tx.type)}
                     <div>
-                      <p className="font-medium text-foreground capitalize">
-                        {transaction.type}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {transaction.description || 'No description'}
+                      <p className="font-medium capitalize">{tx.type}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(tx.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-bold ${transaction.type === 'earning' ? 'text-green-400' : 'text-foreground'}`}>
-                      {transaction.type === 'earning' ? '+' : ''}${Math.abs(transaction.amount).toFixed(2)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(transaction.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
+                  <p className="font-bold">
+                    {tx.type === 'earning' ? '+' : '-'}$
+                    {Math.abs(tx.amount).toFixed(2)}
+                  </p>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No transactions yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Complete jobs to start earning money
-              </p>
             </div>
           )}
         </div>
@@ -285,5 +261,26 @@ const Earnings = () => {
     </DashboardLayout>
   );
 };
+
+/* ───────────────────────── SMALL COMPONENT ───────────────────────── */
+const StatCard = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: JSX.Element;
+  label: string;
+  value: string;
+}) => (
+  <div className="glass-card p-6 flex items-center gap-4">
+    <div className="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-xl text-primary">
+      {icon}
+    </div>
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="text-2xl font-bold">{value}</p>
+    </div>
+  </div>
+);
 
 export default Earnings;
