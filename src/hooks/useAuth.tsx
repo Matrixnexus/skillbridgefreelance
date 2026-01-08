@@ -41,84 +41,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfileAndRole = async (userId: string) => {
-    try {
-      // Fetch profile and role in parallel
-      const [profileResponse, roleResponse] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle(),
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .eq('role', 'admin')
-          .maybeSingle()
-      ]);
-
-      if (profileResponse.data) {
-        setProfile(profileResponse.data as Profile);
-      }
-
-      setIsAdmin(!!roleResponse.data);
-    } catch (error) {
-      console.error('Error fetching profile/role:', error);
+  const fetchProfile = async (userId: string) => {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (profileData) {
+      setProfile(profileData as Profile);
     }
+
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    setIsAdmin(!!roleData);
   };
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfileAndRole(user.id);
+      await fetchProfile(user.id);
     }
   };
 
   useEffect(() => {
-    // Get initial session FIRST
-    const initializeAuth = async () => {
-      setIsLoading(true);
+    supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchProfileAndRole(session.user.id);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setIsLoading(false);
+      if (session?.user) {
+        setTimeout(() => {
+          fetchProfile(session.user.id);
+        }, 0);
+      } else {
+        setProfile(null);
+        setIsAdmin(false);
       }
-    };
+      setIsLoading(false);
+    });
 
-    initializeAuth();
-
-    // Then set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, 'User:', session?.user?.id);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchProfileAndRole(session.user.id);
-        } else {
-          setProfile(null);
-          setIsAdmin(false);
-        }
-        
-        setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id);
       }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
+      setIsLoading(false);
+    });
   }, []);
 
   const signIn = async (email: string, password: string) => {
