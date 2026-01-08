@@ -229,7 +229,7 @@ const Pricing = () => {
                   How do payouts work?
                 </h3>
                 <p className="text-muted-foreground">
-                  Payouts are processed according to your membership tier schedule. VIP members get weekly instant payouts, Pro members get bi-weekly payouts, and Regular members get weekly payouts.
+                  Payouts are processed according to your membership tier schedule..
                 </p>
               </div>
             </div>
