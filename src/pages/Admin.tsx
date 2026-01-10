@@ -70,19 +70,19 @@ interface Job {
 interface Submission {
   id: string;
   submission_content: string;
-  display_file_url: string | null;
-  display_file_name: string | null;
-  status: string;
+  file_url: string | null;
+  worker_file_url: string | null;
+  file_name: string | null;
+  worker_file_name: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_feedback: string | null;
   payment_amount: number;
   created_at: string;
+  reviewed_at: string | null;
   job_title: string | null;
   user_id: string;
   user_email: string;
   user_name: string | null;
-  file_url?: string | null;
-  worker_file_url?: string | null;
-  file_name?: string | null;
-  worker_file_name?: string | null;
 }
 
 const Admin = () => {
@@ -100,11 +100,12 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [dataSource, setDataSource] = useState<'view' | 'table'>('view');
-  const [hasLoaded, setHasLoaded] = useState({
-    jobs: false,
-    categories: false,
-    submissions: false
-  });
+  
+  // For submission review dialog
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [feedback, setFeedback] = useState('');
+  const [isReviewing, setIsReviewing] = useState(false);
   
   // Job form state
   const [jobForm, setJobForm] = useState({
@@ -118,7 +119,7 @@ const Admin = () => {
     category_id: '',
   });
 
-  // File upload state - OPTIONAL
+  // File upload state
   const [jobFile, setJobFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -132,51 +133,93 @@ const Admin = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // Fetch initial data once
+  // Fetch data
   useEffect(() => {
     if (user && isAdmin && !authLoading) {
-      fetchInitialData();
+      fetchData();
     }
-  }, [user, isAdmin, authLoading]);
+  }, [user, isAdmin, authLoading, dataSource]);
 
-  // Fetch data when dataSource changes
-  useEffect(() => {
-    if (user && isAdmin && hasLoaded.submissions) {
-      fetchSubmissions();
-    }
-  }, [dataSource]);
-
-  // Fetch submissions when tab changes to submissions
-  useEffect(() => {
-    if (user && isAdmin && activeTab === 'submissions' && !hasLoaded.submissions) {
-      fetchSubmissions();
-    }
-  }, [activeTab]);
-
-  const fetchInitialData = async () => {
-    if (hasLoaded.jobs && hasLoaded.categories) return;
-    
+  const fetchData = async () => {
     setIsLoading(true);
     try {
+      // Fetch jobs and categories
       const [jobsResult, categoriesResult] = await Promise.all([
         supabase
           .from('jobs')
           .select('*, category:job_categories(name)')
           .order('created_at', { ascending: false })
-          .limit(50), // Reduced from all records
+          .limit(50),
         supabase.from('job_categories').select('*').order('name'),
       ]);
 
-      if (jobsResult.data) {
-        setJobs(jobsResult.data as unknown as Job[]);
-        setHasLoaded(prev => ({ ...prev, jobs: true }));
+      if (jobsResult.data) setJobs(jobsResult.data as unknown as Job[]);
+      if (categoriesResult.data) setCategories(categoriesResult.data);
+
+      // Fetch submissions based on data source
+      let submissionsResult;
+      if (dataSource === 'view') {
+        submissionsResult = await supabase
+          .from('admin_submissions_view')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+      } else {
+        submissionsResult = await supabase
+          .from('job_submissions')
+          .select(`
+            *,
+            job:jobs(title),
+            profile:profiles(email, full_name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(100);
       }
-      if (categoriesResult.data) {
-        setCategories(categoriesResult.data);
-        setHasLoaded(prev => ({ ...prev, categories: true }));
+
+      if (submissionsResult.data) {
+        let formattedSubmissions: Submission[];
+        if (dataSource === 'view') {
+          formattedSubmissions = submissionsResult.data.map((sub: any) => ({
+            id: sub.id,
+            submission_content: sub.submission_content,
+            file_url: sub.file_url,
+            worker_file_url: sub.worker_file_url,
+            file_name: sub.file_name,
+            worker_file_name: sub.worker_file_name,
+            status: sub.status,
+            admin_feedback: sub.admin_feedback,
+            payment_amount: sub.payment_amount,
+            created_at: sub.created_at,
+            reviewed_at: sub.reviewed_at,
+            job_title: sub.job_title,
+            user_id: sub.user_id,
+            user_email: sub.user_email,
+            user_name: sub.user_name,
+          }));
+        } else {
+          formattedSubmissions = submissionsResult.data.map((sub: any) => ({
+            id: sub.id,
+            submission_content: sub.submission_content,
+            file_url: sub.file_url,
+            worker_file_url: sub.worker_file_url,
+            file_name: sub.file_name,
+            worker_file_name: sub.worker_file_name,
+            status: sub.status,
+            admin_feedback: sub.admin_feedback,
+            payment_amount: sub.payment_amount,
+            created_at: sub.created_at,
+            reviewed_at: sub.reviewed_at,
+            job_title: sub.job?.title,
+            user_id: sub.user_id,
+            user_email: sub.profile?.email,
+            user_name: sub.profile?.full_name,
+          }));
+        }
+        
+        setAllSubmissions(formattedSubmissions);
       }
     } catch (error) {
-      console.error('Error fetching initial data:', error);
+      console.error('Error fetching data:', error);
       toast({
         title: 'Error',
         description: 'Failed to load data',
@@ -187,102 +230,99 @@ const Admin = () => {
     }
   };
 
-  const fetchSubmissions = async () => {
-    if (hasLoaded.submissions && dataSource === 'view') return;
+  // Get file URL for display
+  const getFileUrl = (submission: Submission): string | null => {
+    return submission.file_url || submission.worker_file_url;
+  };
+
+  // Get file name for display
+  const getFileName = (submission: Submission): string | null => {
+    return submission.file_name || submission.worker_file_name || 'Submitted File';
+  };
+
+  // Handle submission review with earnings update
+  const handleReviewSubmission = async (status: 'approved' | 'rejected') => {
+    if (!selectedSubmission) return;
+
+    setIsReviewing(true);
     
-    setIsLoading(true);
     try {
-      let submissionsResult;
-      if (dataSource === 'view') {
-        submissionsResult = await supabase
-          .from('admin_submissions_view')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50); // Reduced from 100
-      } else {
-        submissionsResult = await supabase
-          .from('job_submissions')
-          .select(`
-            *,
-            job:jobs(title),
-            profile:profiles(email, full_name)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(50); // Reduced from 100
+      // Update submission status
+      const updateData: any = {
+        status,
+        admin_feedback: feedback || null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id,
+      };
+
+      const { error: submissionError } = await supabase
+        .from('job_submissions')
+        .update(updateData)
+        .eq('id', selectedSubmission.id);
+
+      if (submissionError) throw submissionError;
+
+      // If approved, update user earnings
+      if (status === 'approved') {
+        // First get current user earnings
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('approved_earnings, total_earnings, tasks_completed')
+          .eq('id', selectedSubmission.user_id)
+          .single();
+
+        if (profile) {
+          const currentApprovedEarnings = profile.approved_earnings || 0;
+          const currentTotalEarnings = profile.total_earnings || 0;
+          const currentTasksCompleted = profile.tasks_completed || 0;
+
+          // Update user's profile earnings
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              approved_earnings: currentApprovedEarnings + selectedSubmission.payment_amount,
+              total_earnings: currentTotalEarnings + selectedSubmission.payment_amount,
+              tasks_completed: currentTasksCompleted + 1,
+            })
+            .eq('id', selectedSubmission.user_id);
+
+          if (profileError) {
+            console.warn('Failed to update user earnings:', profileError);
+          }
+        }
       }
 
-      if (submissionsResult.data) {
-        let formattedSubmissions: Submission[];
-        if (dataSource === 'view') {
-          formattedSubmissions = submissionsResult.data.map((sub: any) => ({
-            id: sub.id,
-            submission_content: sub.submission_content,
-            display_file_url: sub.display_file_url,
-            display_file_name: sub.display_file_name,
-            status: sub.status,
-            payment_amount: sub.payment_amount,
-            created_at: sub.created_at,
-            job_title: sub.job_title,
-            user_id: sub.user_id,
-            user_email: sub.user_email,
-            user_name: sub.user_name,
-            file_url: sub.file_url,
-            worker_file_url: sub.worker_file_url,
-            file_name: sub.file_name,
-            worker_file_name: sub.worker_file_name,
-          }));
-        } else {
-          formattedSubmissions = submissionsResult.data.map((sub: any) => ({
-            id: sub.id,
-            submission_content: sub.submission_content,
-            display_file_url: sub.file_url || sub.worker_file_url,
-            display_file_name: sub.file_name || sub.worker_file_name,
-            status: sub.status,
-            payment_amount: sub.payment_amount,
-            created_at: sub.created_at,
-            job_title: sub.job?.title,
-            user_id: sub.user_id,
-            user_email: sub.profile?.email,
-            user_name: sub.profile?.full_name,
-            file_url: sub.file_url,
-            worker_file_url: sub.worker_file_url,
-            file_name: sub.file_name,
-            worker_file_name: sub.worker_file_name,
-          }));
-        }
-        
-        setAllSubmissions(formattedSubmissions);
-        setHasLoaded(prev => ({ ...prev, submissions: true }));
-      }
-    } catch (error) {
-      console.error('Error fetching submissions:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load submissions',
-        variant: 'destructive',
+      toast({ 
+        title: 'Success', 
+        description: `Submission ${status}` 
+      });
+
+      // Refresh data
+      await fetchData();
+      
+      // Close dialog
+      setReviewDialogOpen(false);
+      setSelectedSubmission(null);
+      setFeedback('');
+      
+    } catch (error: any) {
+      console.error('Review error:', error);
+      toast({ 
+        title: 'Error', 
+        description: error.message || 'Failed to review submission', 
+        variant: 'destructive' 
       });
     } finally {
-      setIsLoading(false);
+      setIsReviewing(false);
     }
   };
 
-  // Filter submissions based on status and search
-  const filteredSubmissions = allSubmissions.filter(submission => {
-    const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = (
-      submission.job_title?.toLowerCase().includes(searchLower) ||
-      submission.user_email?.toLowerCase().includes(searchLower) ||
-      submission.user_name?.toLowerCase().includes(searchLower) ||
-      submission.submission_content?.toLowerCase().includes(searchLower)
-    );
-    
-    const matchesStatus = statusFilter === 'all' || submission.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  // Get pending submissions count for stats
-  const pendingSubmissions = allSubmissions.filter(sub => sub.status === 'pending');
+  // Open review dialog
+  const openReviewDialog = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setFeedback(submission.admin_feedback || '');
+    setReviewDialogOpen(true);
+  };
 
   const handleFileUploadClick = () => {
     if (fileInputRef.current) {
@@ -326,14 +366,13 @@ const Admin = () => {
       let jobFileName = null;
       let jobFileType = null;
 
-      // Upload file only if provided (OPTIONAL)
       if (jobFile) {
         try {
           cloudinaryUrl = await uploadToCloudinary(jobFile);
           jobFileName = jobFile.name;
           jobFileType = jobFile.type;
         } catch (uploadError) {
-          console.warn('Cloudinary upload failed, continuing without file:', uploadError);
+          console.warn('Cloudinary upload failed:', uploadError);
         }
       }
 
@@ -364,17 +403,7 @@ const Admin = () => {
 
       setIsJobDialogOpen(false);
       resetJobForm();
-      
-      // Refresh jobs list
-      const jobsResult = await supabase
-        .from('jobs')
-        .select('*, category:job_categories(name)')
-        .order('created_at', { ascending: false })
-        .limit(50);
-        
-      if (jobsResult.data) {
-        setJobs(jobsResult.data as unknown as Job[]);
-      }
+      await fetchData();
 
     } catch (error: any) {
       console.error('Error creating job:', error);
@@ -413,7 +442,7 @@ const Admin = () => {
           updateData.job_file_name = jobFile.name;
           updateData.job_file_type = jobFile.type;
         } catch (uploadError) {
-          console.warn('Cloudinary upload failed, keeping existing file:', uploadError);
+          console.warn('Cloudinary upload failed:', uploadError);
         }
       } else if (!jobFile && editingJob.job_file_url) {
         updateData.job_file_url = editingJob.job_file_url;
@@ -436,17 +465,7 @@ const Admin = () => {
       setIsJobDialogOpen(false);
       setEditingJob(null);
       resetJobForm();
-      
-      // Refresh jobs list
-      const jobsResult = await supabase
-        .from('jobs')
-        .select('*, category:job_categories(name)')
-        .order('created_at', { ascending: false })
-        .limit(50);
-        
-      if (jobsResult.data) {
-        setJobs(jobsResult.data as unknown as Job[]);
-      }
+      await fetchData();
 
     } catch (error: any) {
       toast({ 
@@ -468,9 +487,7 @@ const Admin = () => {
       if (error) throw error;
       
       toast({ title: 'Success', description: 'Job deleted successfully' });
-      
-      // Update local state
-      setJobs(prev => prev.filter(job => job.id !== jobId));
+      await fetchData();
     } catch (error: any) {
       toast({ 
         title: 'Error', 
@@ -489,42 +506,7 @@ const Admin = () => {
       
       if (error) throw error;
       
-      // Update local state
-      setJobs(prev => prev.map(j => 
-        j.id === job.id ? { ...j, is_active: !j.is_active } : j
-      ));
-    } catch (error: any) {
-      toast({ 
-        title: 'Error', 
-        description: error.message, 
-        variant: 'destructive' 
-      });
-    }
-  };
-
-  const handleReviewSubmission = async (submissionId: string, status: 'approved' | 'rejected', feedback?: string) => {
-    try {
-      const { error } = await supabase
-        .from('job_submissions')
-        .update({
-          status,
-          admin_feedback: feedback || null,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-        })
-        .eq('id', submissionId);
-
-      if (error) throw error;
-
-      toast({ 
-        title: 'Success', 
-        description: `Submission ${status}` 
-      });
-      
-      // Update local state
-      setAllSubmissions(prev => prev.map(sub => 
-        sub.id === submissionId ? { ...sub, status } : sub
-      ));
+      await fetchData();
     } catch (error: any) {
       toast({ 
         title: 'Error', 
@@ -577,6 +559,22 @@ const Admin = () => {
     }
   };
 
+  const filteredSubmissions = allSubmissions.filter(submission => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = (
+      submission.job_title?.toLowerCase().includes(searchLower) ||
+      submission.user_email?.toLowerCase().includes(searchLower) ||
+      submission.user_name?.toLowerCase().includes(searchLower) ||
+      submission.submission_content?.toLowerCase().includes(searchLower)
+    );
+    
+    const matchesStatus = statusFilter === 'all' || submission.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const pendingSubmissions = allSubmissions.filter(sub => sub.status === 'pending');
+
   const stats = [
     { 
       name: 'Total Jobs', 
@@ -609,7 +607,6 @@ const Admin = () => {
     return (
       <DashboardLayout>
         <div className="space-y-6">
-          {/* Header skeleton */}
           <div className="flex justify-between items-center">
             <div>
               <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
@@ -618,14 +615,12 @@ const Admin = () => {
             <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
           </div>
           
-          {/* Stats skeleton */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-20 bg-gray-200 rounded animate-pulse"></div>
             ))}
           </div>
           
-          {/* Content skeleton */}
           <div className="h-64 bg-gray-200 rounded animate-pulse"></div>
         </div>
       </DashboardLayout>
@@ -711,7 +706,7 @@ const Admin = () => {
                       />
                     </div>
                     
-                    {/* File Upload Section - OPTIONAL */}
+                    {/* File Upload Section */}
                     <div className="col-span-2 space-y-4">
                       <div className="space-y-2">
                         <Label>Job File (Optional)</Label>
@@ -918,6 +913,55 @@ const Admin = () => {
           ))}
         </div>
 
+        {/* Review Submission Dialog */}
+        <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Review Submission</DialogTitle>
+            </DialogHeader>
+            {selectedSubmission && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Feedback (Optional)</Label>
+                  <Textarea
+                    placeholder="Provide feedback for the worker..."
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    rows={4}
+                    disabled={isReviewing}
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setReviewDialogOpen(false)}
+                    disabled={isReviewing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => handleReviewSubmission('rejected')}
+                    disabled={isReviewing}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Reject
+                  </Button>
+                  <Button
+                    variant="hero"
+                    onClick={() => handleReviewSubmission('approved')}
+                    disabled={isReviewing}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Approve & Pay ${selectedSubmission.payment_amount}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Content */}
         {activeTab === 'jobs' && (
           <div className="space-y-4">
@@ -1061,126 +1105,125 @@ const Admin = () => {
               </div>
             ) : filteredSubmissions.length > 0 ? (
               <div className="space-y-4">
-                {filteredSubmissions.map((submission) => (
-                  <div key={submission.id} className="glass-card p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6 pb-4 border-b border-border">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="text-lg font-semibold text-foreground">
-                            {submission.job_title || 'Unknown Job'}
-                          </h3>
-                          <span className={`text-xs px-2.5 py-1 rounded-full border ${getStatusColor(submission.status)}`}>
-                            {submission.status.toUpperCase()}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            ID: {submission.id.substring(0, 8)}...
-                          </span>
-                        </div>
-                        
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            <span className="font-medium text-foreground">
-                              {submission.user_name || 'No name provided'}
+                {filteredSubmissions.map((submission) => {
+                  const fileUrl = getFileUrl(submission);
+                  const fileName = getFileName(submission);
+                  
+                  return (
+                    <div key={submission.id} className="glass-card p-6">
+                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6 pb-4 border-b border-border">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="text-lg font-semibold text-foreground">
+                              {submission.job_title || 'Unknown Job'}
+                            </h3>
+                            <span className={`text-xs px-2.5 py-1 rounded-full border ${getStatusColor(submission.status)}`}>
+                              {submission.status.toUpperCase()}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {submission.id.substring(0, 8)}...
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span className="font-medium text-foreground">
-                              {submission.user_email}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4" />
-                            <span className="font-medium text-foreground">
-                              ${submission.payment_amount}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span className="font-medium text-foreground">
-                              {new Date(submission.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <Database className="w-3 h-3" />
-                            <span className="text-muted-foreground">
-                              Source: {dataSource}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {submission.status === 'pending' && (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-green-400 border-green-400/20 hover:bg-green-400/10"
-                            onClick={() => handleReviewSubmission(submission.id, 'approved')}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-400 border-red-400/20 hover:bg-red-400/10"
-                            onClick={() => handleReviewSubmission(submission.id, 'rejected')}
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-4">
-                      {submission.display_file_url && (
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-foreground flex items-center gap-2">
-                            <FileIcon className="w-4 h-4" />
-                            Submitted File
-                          </h4>
-                          <div className="p-4 bg-secondary/30 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-foreground">
-                                  {submission.display_file_name || 'Submitted File'}
-                                </p>
-                                <a 
-                                  href={submission.display_file_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline text-sm flex items-center gap-1"
-                                >
-                                  <ExternalLink className="w-3 h-3" />
-                                  View File
-                                </a>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(submission.display_file_url!, '_blank')}
-                                className="flex items-center gap-1"
-                              >
-                                <Download className="w-4 h-4" />
-                                Download
-                              </Button>
+                          
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              <span className="font-medium text-foreground">
+                                {submission.user_name || 'No name provided'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              <span className="font-medium text-foreground">
+                                {submission.user_email}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4" />
+                              <span className="font-medium text-foreground">
+                                ${submission.payment_amount}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4" />
+                              <span className="font-medium text-foreground">
+                                {new Date(submission.created_at).toLocaleDateString()}
+                              </span>
                             </div>
                           </div>
                         </div>
-                      )}
-                      
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-foreground">Submission Notes</h4>
-                        <div className="p-4 bg-secondary/30 rounded-lg whitespace-pre-wrap text-sm">
-                          {submission.submission_content || 'No additional notes provided.'}
+                        
+                        {submission.status === 'pending' ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => openReviewDialog(submission)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Review
+                          </Button>
+                        ) : (
+                          <div className={`text-xs px-2.5 py-1 rounded-full border ${getStatusColor(submission.status)}`}>
+                            {submission.status.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        {fileUrl && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-foreground flex items-center gap-2">
+                              <FileIcon className="w-4 h-4" />
+                              Submitted File
+                            </h4>
+                            <div className="p-4 bg-secondary/30 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-foreground">
+                                    {fileName}
+                                  </p>
+                                  <a 
+                                    href={fileUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline text-sm flex items-center gap-1"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                    View File
+                                  </a>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(fileUrl, '_blank')}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-foreground">Submission Notes</h4>
+                          <div className="p-4 bg-secondary/30 rounded-lg whitespace-pre-wrap text-sm">
+                            {submission.submission_content || 'No additional notes provided.'}
+                          </div>
                         </div>
+                        
+                        {submission.admin_feedback && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-foreground">Admin Feedback</h4>
+                            <div className="p-4 bg-blue-400/10 rounded-lg whitespace-pre-wrap text-sm border border-blue-400/20">
+                              {submission.admin_feedback}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="glass-card p-12 text-center">
