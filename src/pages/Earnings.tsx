@@ -56,68 +56,61 @@ const Earnings = () => {
   }, [authLoading, user, navigate]);
 
   /* ───────────────────────── FETCH DATA ───────────────────────── */
-  const fetchEarningsData = async () => {
-    if (!user) return;
-
-    try {
-      setIsLoading(true);
-      
-      // Fetch transactions
-      const { data: txData, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (txError) {
-        console.error('Error fetching transactions:', txError);
-      } else {
-        setTransactions(txData || []);
-      }
-
-      // Fetch submission payments data
-      const { data: submissionsData, error: submissionsError } = await supabase
-        .from('job_submissions')
-        .select('status, payment_amount')
-        .eq('user_id', user.id);
-
-      if (submissionsError) {
-        console.error('Error fetching submissions:', submissionsError);
-      } else if (submissionsData) {
-        const summary = submissionsData.reduce((acc, submission) => {
-          const amount = submission.payment_amount || 0;
-          acc.total += amount;
-          
-          switch (submission.status) {
-            case 'pending':
-              acc.pending += amount;
-              break;
-            case 'approved':
-              acc.approved += amount;
-              break;
-            case 'rejected':
-              acc.rejected += amount;
-              break;
-          }
-          return acc;
-        }, { pending: 0, total: 0, approved: 0, rejected: 0 });
-
-        setPaymentSummary(summary);
-      }
-    } catch (error) {
-      console.error('Error fetching earnings data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchEarningsData();
+    const fetchData = async () => {
+      if (!user) return;
+
+      try {
+        setIsLoading(true);
+        
+        // Fetch transactions
+        const { data: txData } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        setTransactions(txData || []);
+
+        // Fetch submission payments data
+        const { data: submissionsData } = await supabase
+          .from('job_submissions')
+          .select('status, payment_amount')
+          .eq('user_id', user.id);
+
+        if (submissionsData) {
+          const summary = submissionsData.reduce((acc, submission) => {
+            acc.total += submission.payment_amount || 0;
+            
+            switch (submission.status) {
+              case 'pending':
+                acc.pending += submission.payment_amount || 0;
+                break;
+              case 'approved':
+                acc.approved += submission.payment_amount || 0;
+                break;
+              case 'rejected':
+                acc.rejected += submission.payment_amount || 0;
+                break;
+            }
+            return acc;
+          }, { pending: 0, total: 0, approved: 0, rejected: 0 });
+
+          setPaymentSummary(summary);
+        }
+      } catch (error) {
+        console.error('Error fetching earnings data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, [user]);
 
   /* ───────────────────── WITHDRAW HELPERS ───────────────────── */
   const lastWithdrawalDate = () => {
-    const last = transactions.find(t => t.type === 'payout' && t.status === 'completed');
+    const last = transactions.find(t => t.type === 'payout');
     return last ? new Date(last.created_at) : null;
   };
 
@@ -128,15 +121,6 @@ const Earnings = () => {
     const diff =
       (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
     return diff >= WITHDRAWAL_INTERVAL_DAYS;
-  };
-
-  const getNextWithdrawalDate = () => {
-    const lastDate = lastWithdrawalDate();
-    if (!lastDate) return new Date();
-    
-    const nextDate = new Date(lastDate);
-    nextDate.setDate(nextDate.getDate() + WITHDRAWAL_INTERVAL_DAYS);
-    return nextDate;
   };
 
   /* ───────────────────── WITHDRAW ACTION ───────────────────── */
@@ -152,13 +136,12 @@ const Earnings = () => {
     }
 
     if (amount < MIN_WITHDRAWAL) {
-      setWithdrawError(`Minimum withdrawal is $${MIN_WITHDRAWAL.toFixed(2)} USD.`);
+      setWithdrawError('Minimum withdrawal is $1,000 USD.');
       return;
     }
 
     if (!canWithdrawByDate()) {
-      const nextDate = getNextWithdrawalDate();
-      setWithdrawError(`Withdrawals are allowed only once every 14 days. Next available: ${nextDate.toLocaleDateString()}`);
+      setWithdrawError('Withdrawals are allowed only once every 14 days.');
       return;
     }
 
@@ -170,22 +153,6 @@ const Earnings = () => {
     try {
       setIsSubmitting(true);
 
-      // Create a withdrawal request transaction
-      const { error: transactionError } = await supabase
-        .from('transactions')
-        .insert({
-          user_id: user?.id,
-          type: 'payout',
-          amount: -amount,
-          description: 'Withdrawal request',
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        });
-
-      if (transactionError) throw transactionError;
-
-      // You might want to create a separate withdrawal_requests table
-      // or handle this via your API endpoint
       const res = await fetch('/api/request-withdrawal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -196,19 +163,15 @@ const Earnings = () => {
         }),
       });
 
-      if (!res.ok) throw new Error('Withdrawal request failed');
+      if (!res.ok) throw new Error();
 
       setWithdrawSuccess(
-        'Withdrawal request submitted successfully. Admin review in progress.'
+        'Withdrawal request submitted. Admin review in progress.'
       );
       setWithdrawAmount('');
-      
-      // Refresh data to show updated transactions
-      fetchEarningsData();
-    } catch (error: any) {
-      console.error('Withdrawal error:', error);
+    } catch {
       setWithdrawError(
-        error.message || 'Request failed due to unmet withdrawal requirements.'
+        'Request failed due to unmet withdrawal requirements.'
       );
     } finally {
       setIsSubmitting(false);
@@ -305,7 +268,6 @@ const Earnings = () => {
                     className="w-full px-4 py-2 rounded-lg bg-secondary border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
                     min="0"
                     max={paymentSummary.approved}
-                    step="0.01"
                   />
                 </div>
 
@@ -362,11 +324,7 @@ const Earnings = () => {
                   {canWithdrawByDate() 
                     ? 'You can withdraw now' 
                     : lastWithdrawalDate()
-                    ? `Available on ${getNextWithdrawalDate().toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}`
+                    ? `Available in ${Math.ceil(WITHDRAWAL_INTERVAL_DAYS - ((Date.now() - lastWithdrawalDate()!.getTime()) / (1000 * 60 * 60 * 24)))} days`
                     : 'Available now'
                   }
                 </p>
@@ -382,19 +340,19 @@ const Earnings = () => {
             <EarningItem
               label="Pending Review"
               amount={paymentSummary.pending}
-              percentage={paymentSummary.total > 0 ? (paymentSummary.pending / paymentSummary.total) * 100 : 0}
+              percentage={(paymentSummary.pending / paymentSummary.total) * 100}
               color="bg-yellow-400"
             />
             <EarningItem
               label="Approved"
               amount={paymentSummary.approved}
-              percentage={paymentSummary.total > 0 ? (paymentSummary.approved / paymentSummary.total) * 100 : 0}
+              percentage={(paymentSummary.approved / paymentSummary.total) * 100}
               color="bg-green-400"
             />
             <EarningItem
               label="Rejected"
               amount={paymentSummary.rejected}
-              percentage={paymentSummary.total > 0 ? (paymentSummary.rejected / paymentSummary.total) * 100 : 0}
+              percentage={(paymentSummary.rejected / paymentSummary.total) * 100}
               color="bg-red-400"
             />
           </div>
@@ -402,16 +360,7 @@ const Earnings = () => {
 
         {/* TRANSACTIONS */}
         <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Transaction History</h2>
-            <button
-              onClick={fetchEarningsData}
-              className="text-sm text-primary hover:underline"
-              disabled={isLoading}
-            >
-              Refresh
-            </button>
-          </div>
+          <h2 className="text-lg font-semibold mb-4">Transaction History</h2>
 
           {isLoading ? (
             <div className="space-y-3">

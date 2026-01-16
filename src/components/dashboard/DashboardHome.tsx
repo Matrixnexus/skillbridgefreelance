@@ -24,86 +24,28 @@ interface Job {
   category: { name: string } | null;
 }
 
-interface EarningsData {
-  total: number;
-  pending: number;
-  approved: number;
-  rejected: number;
-}
-
 const DashboardHome = () => {
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
-  const [earnings, setEarnings] = useState<EarningsData>({
-    total: 0,
-    pending: 0,
-    approved: 0,
-    rejected: 0
-  });
-  const [tasksCompleted, setTasksCompleted] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!user) return;
+    const fetchRecentJobs = async () => {
+      const { data } = await supabase
+        .from('jobs')
+        .select('id, title, payment_amount, difficulty, required_tier, category:job_categories(name)')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      try {
-        setIsLoading(true);
-
-        // Fetch recent jobs
-        const { data: jobsData } = await supabase
-          .from('jobs')
-          .select('id, title, payment_amount, difficulty, required_tier, category:job_categories(name)')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (jobsData) {
-          setRecentJobs(jobsData as unknown as Job[]);
-        }
-
-        // Fetch earnings data from submissions
-        const { data: submissionsData } = await supabase
-          .from('job_submissions')
-          .select('status, payment_amount')
-          .eq('user_id', user.id);
-
-        if (submissionsData) {
-          const earningsSummary = submissionsData.reduce((acc, submission) => {
-            const amount = submission.payment_amount || 0;
-            acc.total += amount;
-            
-            switch (submission.status) {
-              case 'pending':
-                acc.pending += amount;
-                break;
-              case 'approved':
-                acc.approved += amount;
-                break;
-              case 'rejected':
-                acc.rejected += amount;
-                break;
-            }
-            return acc;
-          }, { total: 0, pending: 0, approved: 0, rejected: 0 });
-
-          setEarnings(earningsSummary);
-          
-          // Count completed tasks (approved submissions)
-          const completed = submissionsData.filter(
-            sub => sub.status === 'approved'
-          ).length;
-          setTasksCompleted(completed);
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setIsLoading(false);
+      if (data) {
+        setRecentJobs(data as unknown as Job[]);
       }
+      setIsLoading(false);
     };
 
-    fetchDashboardData();
-  }, [user]);
+    fetchRecentJobs();
+  }, []);
 
   const getDailyTaskLimit = () => {
     switch (profile?.membership_tier) {
@@ -130,21 +72,21 @@ const DashboardHome = () => {
   const stats = [
     {
       name: 'Total Earnings',
-      value: `$${earnings.total.toFixed(2)}`,
+      value: `$${profile?.total_earnings?.toFixed(2) || '0.00'}`,
       icon: DollarSign,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
     },
     {
       name: 'Pending Earnings',
-      value: `$${earnings.pending.toFixed(2)}`,
+      value: `$${profile?.pending_earnings?.toFixed(2) || '0.00'}`,
       icon: Clock,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-400/10',
     },
     {
       name: 'Tasks Completed',
-      value: tasksCompleted,
+      value: profile?.tasks_completed || 0,
       icon: CheckCircle,
       color: 'text-green-400',
       bgColor: 'bg-green-400/10',
