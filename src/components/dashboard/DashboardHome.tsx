@@ -49,14 +49,17 @@ const DashboardHome = () => {
       setIsLoading(true);
 
       try {
-        // Fetch updated profile
+        // Fetch updated profile with ALL earnings data
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('*')
+          .select('*, approved_earnings, total_earnings, tasks_completed, daily_tasks_used, membership_tier, full_name')
           .eq('id', user.id)
           .single();
 
-        if (profileData) setProfile(profileData);
+        if (profileData) {
+          setProfile(profileData);
+          console.log('PROFILE DATA FROM DB:', profileData); // Debug log
+        }
 
         // Fetch recent jobs
         const { data: jobsData } = await supabase
@@ -68,37 +71,36 @@ const DashboardHome = () => {
 
         if (jobsData) setRecentJobs(jobsData as unknown as Job[]);
 
-          // In DashboardHome.tsx, replace the entire payment summary calculation (lines 70-94)
-          // with this updated version:
+        // Fetch submissions ONLY for pending/rejected calculation
+        const { data: submissions } = await supabase
+          .from('job_submissions')
+          .select('status, payment_amount')
+          .eq('user_id', user.id);
 
-          // Fetch submissions for payment summary
-          const { data: submissions } = await supabase
-            .from('job_submissions')
-            .select('status, payment_amount')
-            .eq('user_id', user.id);
+        // PRIMARY SOURCE: profiles table for approved and total earnings
+        // SECONDARY: submissions only for pending/rejected statuses
+        const summary: PaymentSummary = {
+          pending: 0,
+          total: profileData?.total_earnings || 0, // FROM PROFILES TABLE
+          approved: profileData?.approved_earnings || 0, // FROM PROFILES TABLE
+          rejected: 0,
+        };
 
-          // Use profile data as primary source for approved and total earnings
-          // Submissions data only for pending/rejected
-          const summary = {
-            pending: 0,
-            total: profileData?.total_earnings || 0, // FROM PROFILES TABLE
-            approved: profileData?.approved_earnings || 0, // FROM PROFILES TABLE
-            rejected: 0
-          };
-
-          // Calculate pending and rejected from submissions
-          if (submissions) {
-            submissions.forEach(sub => {
-              if (sub.status === 'pending') {
-                summary.pending += sub.payment_amount || 0;
-              } else if (sub.status === 'rejected') {
-                summary.rejected += sub.payment_amount || 0;
-              }
-            });
-          }
-
-          setPaymentSummary(summary);
+        // Calculate pending and rejected from submissions
+        if (submissions) {
+          submissions.forEach(sub => {
+            if (sub.status === 'pending') {
+              summary.pending += sub.payment_amount || 0;
+            } else if (sub.status === 'rejected') {
+              summary.rejected += sub.payment_amount || 0;
+            }
+            // Approved earnings are already from profiles table
+          });
         }
+
+        console.log('PAYMENT SUMMARY CALCULATED:', summary); // Debug log
+        setPaymentSummary(summary);
+
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       } finally {
@@ -131,42 +133,51 @@ const DashboardHome = () => {
     return 0;
   };
 
+  // Updated stats to show from profiles table
   const stats = [
     {
       name: 'Total Earnings',
-      value: `$${paymentSummary.total.toFixed(2)}`,
+      value: `$${(profile?.total_earnings || 0).toFixed(2)}`, // FROM PROFILES
       icon: DollarSign,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      description: 'All earnings including bonuses',
+    },
+    {
+      name: 'Approved Earnings',
+      value: `$${(profile?.approved_earnings || 0).toFixed(2)}`, // FROM PROFILES
+      icon: CheckCircle,
+      color: 'text-green-400',
+      bgColor: 'bg-green-400/10',
+      description: 'Ready for withdrawal',
     },
     {
       name: 'Pending Earnings',
-      value: `$${paymentSummary.pending.toFixed(2)}`,
+      value: `$${paymentSummary.pending.toFixed(2)}`, // From submissions
       icon: Clock,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-400/10',
+      description: 'Awaiting review',
     },
     {
       name: 'Tasks Completed',
       value: profile?.tasks_completed || 0,
-      icon: CheckCircle,
-      color: 'text-green-400',
-      bgColor: 'bg-green-400/10',
-    },
-    {
-      name: 'Tasks Today',
-      value: `${profile?.daily_tasks_used || 0} / ${getDailyTaskLimit()}`,
       icon: Briefcase,
       color: 'text-blue-400',
       bgColor: 'bg-blue-400/10',
+      description: 'Total approved tasks',
     },
   ];
 
-  // In your DashboardHome component, add:
-useEffect(() => {
-  console.log('Dashboard Profile:', profile);
-  console.log('Dashboard Earnings from profile:', profile?.approved_earnings);
-}, [profile]);
+  // Debug useEffect to monitor data
+  useEffect(() => {
+    console.log('=== DASHBOARD DEBUG ===');
+    console.log('Profile:', profile);
+    console.log('Profile approved_earnings:', profile?.approved_earnings);
+    console.log('Profile total_earnings:', profile?.total_earnings);
+    console.log('Payment Summary:', paymentSummary);
+    console.log('=======================');
+  }, [profile, paymentSummary]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -188,6 +199,11 @@ useEffect(() => {
     return userTierIndex >= requiredTierIndex;
   };
 
+  // Helper to check if earnings are showing correctly
+  const hasBonusEarnings = () => {
+    return (profile?.approved_earnings || 0) >= 10 || (profile?.total_earnings || 0) >= 10;
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -199,6 +215,13 @@ useEffect(() => {
           <p className="text-muted-foreground mt-1">
             Here's an overview of your freelancing activity
           </p>
+          {/* Debug indicator - remove in production */}
+          {hasBonusEarnings() && (
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-400/10 text-green-400 text-sm">
+              <CheckCircle className="w-3 h-3" />
+              Bonus earnings applied
+            </div>
+          )}
         </div>
         <Button variant="hero" asChild>
           <Link to="/jobs">
@@ -241,10 +264,76 @@ useEffect(() => {
               <div>
                 <p className="text-sm text-muted-foreground">{stat.name}</p>
                 <p className="text-xl lg:text-2xl font-bold text-foreground">{stat.value}</p>
+                {stat.description && (
+                  <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
+                )}
               </div>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Earnings Breakdown Card */}
+      <div className="glass-card p-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Earnings Breakdown</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">From Profiles Table</span>
+              <span className="font-medium">${(profile?.approved_earnings || 0).toFixed(2)}</span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500" 
+                style={{ width: `${(profile?.approved_earnings || 0) > 0 ? '100%' : '0%'}` }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">From Submissions</span>
+              <span className="font-medium">${(paymentSummary.pending + paymentSummary.rejected).toFixed(2)}</span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-yellow-400 transition-all duration-500" 
+                style={{ width: '50%' }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Total Available</span>
+              <span className="font-medium text-green-400">
+                ${((profile?.approved_earnings || 0) + paymentSummary.pending).toFixed(2)}
+              </span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-green-400 transition-all duration-500" 
+                style={{ width: '75%' }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Daily Limit</span>
+              <span className="font-medium">
+                {profile?.daily_tasks_used || 0} / {getDailyTaskLimit()}
+              </span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-blue-400 transition-all duration-500" 
+                style={{ 
+                  width: `${getDailyTaskLimit() === 'Unlimited' ? '100%' : 
+                    Math.min(100, ((profile?.daily_tasks_used || 0) / 
+                    (typeof getDailyTaskLimit() === 'number' ? getDailyTaskLimit() : 1)) * 100)}%` 
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions & Recent Jobs */}
@@ -335,6 +424,31 @@ useEffect(() => {
           )}
         </div>
       </div>
+
+      {/* Debug Panel - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="glass-card p-6 bg-yellow-400/5 border border-yellow-400/20">
+          <h3 className="font-semibold text-yellow-400 mb-2">Debug Information</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">User ID:</p>
+              <code className="text-xs break-all">{user?.id}</code>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Profile Approved Earnings:</p>
+              <p className="font-mono">${profile?.approved_earnings || 0}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Profile Total Earnings:</p>
+              <p className="font-mono">${profile?.total_earnings || 0}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Database Source:</p>
+              <p className="text-green-400">profiles table</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
