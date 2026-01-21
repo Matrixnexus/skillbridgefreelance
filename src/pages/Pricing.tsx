@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -73,9 +73,13 @@ const Pricing = () => {
   ];
 
   const handleSelectPlan = (tier: string) => {
+    console.log(`Selecting ${tier} plan. User logged in: ${!!user}`);
+    
     if (!user) {
-      navigate('/auth');
+      // Redirect to auth page with a return URL
+      navigate(`/auth?redirect=${encodeURIComponent(`/checkout?plan=${tier}`)}`);
     } else {
+      // User is logged in, go directly to checkout
       navigate(`/checkout?plan=${tier}`);
     }
   };
@@ -92,13 +96,13 @@ const Pricing = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Button */}
           {user && (
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard
-            </Link>
+            </button>
           )}
 
           {/* Header */}
@@ -218,7 +222,7 @@ const Pricing = () => {
                 >
                   {isCurrentPlan(plan.tier) ? 'Current Plan' : plan.cta}
                   {!isCurrentPlan(plan.tier) && (
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   )}
                 </Button>
               </div>

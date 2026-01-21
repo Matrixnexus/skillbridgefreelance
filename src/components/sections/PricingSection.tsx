@@ -1,7 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Check, Star, Zap, Crown, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const PricingSection = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   const plans = [
     {
       name: "Regular",
@@ -19,6 +24,7 @@ const PricingSection = () => {
       cta: "Start Regular",
       variant: "outline" as const,
       popular: false,
+      tier: "regular",
     },
     {
       name: "Pro",
@@ -37,6 +43,7 @@ const PricingSection = () => {
       cta: "Go Pro",
       variant: "hero" as const,
       popular: true,
+      tier: "pro",
     },
     {
       name: "VIP",
@@ -46,7 +53,7 @@ const PricingSection = () => {
       icon: Crown,
       features: [
         "Access to ALL job tiers",
-        "10 tasks per day(Highest paing picks)",
+        "10 tasks per day (Highest paying picks)",
         "Express review (12h)",
         "24/7 priority support",
         "Premium analytics & insights",
@@ -56,8 +63,21 @@ const PricingSection = () => {
       cta: "Become VIP",
       variant: "premium" as const,
       popular: false,
+      tier: "vip",
     },
   ];
+
+  const handleSelectPlan = (tier: string) => {
+    console.log(`Selecting ${tier} plan. User logged in: ${!!user}`);
+    
+    if (!user) {
+      // If user is not logged in, redirect to auth page
+      navigate('/auth');
+    } else {
+      // If user is logged in, redirect to checkout with selected plan
+      navigate(`/checkout?plan=${tier}`);
+    }
+  };
 
   return (
     <section id="pricing" className="py-24 lg:py-32 relative">
@@ -133,10 +153,20 @@ const PricingSection = () => {
               </ul>
 
               {/* CTA */}
-              <Button variant={plan.variant} size="lg" className="w-full group">
+              <Button 
+                variant={plan.variant} 
+                size="lg" 
+                className="w-full group"
+                onClick={() => handleSelectPlan(plan.tier)}
+              >
                 {plan.cta}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
+              
+              {/* Debug info - remove in production */}
+              <div className="text-xs text-muted-foreground mt-4">
+                Click to select {plan.tier} plan
+              </div>
             </div>
           ))}
         </div>
@@ -147,6 +177,15 @@ const PricingSection = () => {
             All plans include instant guaranteed verification. No questions asked or delayed services.
           </p>
         </div>
+        
+        {/* Additional CTA for non-logged in users */}
+        {!user && (
+          <div className="text-center mt-8">
+            <p className="text-muted-foreground">
+              <span className="text-primary font-medium">Note:</span> You'll need to create an account or log in to purchase a membership.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
