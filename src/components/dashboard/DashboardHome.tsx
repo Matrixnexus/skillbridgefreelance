@@ -68,31 +68,35 @@ const DashboardHome = () => {
 
         if (jobsData) setRecentJobs(jobsData as unknown as Job[]);
 
-        // Fetch submissions for payment summary
-        const { data: submissions } = await supabase
-          .from('job_submissions')
-          .select('status, payment_amount')
-          .eq('user_id', user.id);
+          // In DashboardHome.tsx, replace the entire payment summary calculation (lines 70-94)
+          // with this updated version:
 
-        if (submissions) {
-          const summary = submissions.reduce(
-            (acc, sub) => {
-              acc.total += sub.payment_amount || 0;
-              switch (sub.status) {
-                case 'pending':
-                  acc.pending += sub.payment_amount || 0;
-                  break;
-                case 'approved':
-                  acc.approved += sub.payment_amount || 0;
-                  break;
-                case 'rejected':
-                  acc.rejected += sub.payment_amount || 0;
-                  break;
+          // Fetch submissions for payment summary
+          const { data: submissions } = await supabase
+            .from('job_submissions')
+            .select('status, payment_amount')
+            .eq('user_id', user.id);
+
+          // Use profile data as primary source for approved and total earnings
+          // Submissions data only for pending/rejected
+          const summary = {
+            pending: 0,
+            total: profileData?.total_earnings || 0, // FROM PROFILES TABLE
+            approved: profileData?.approved_earnings || 0, // FROM PROFILES TABLE
+            rejected: 0
+          };
+
+          // Calculate pending and rejected from submissions
+          if (submissions) {
+            submissions.forEach(sub => {
+              if (sub.status === 'pending') {
+                summary.pending += sub.payment_amount || 0;
+              } else if (sub.status === 'rejected') {
+                summary.rejected += sub.payment_amount || 0;
               }
-              return acc;
-            },
-            { pending: 0, total: 0, approved: 0, rejected: 0 }
-          );
+            });
+          }
+
           setPaymentSummary(summary);
         }
       } catch (err) {
