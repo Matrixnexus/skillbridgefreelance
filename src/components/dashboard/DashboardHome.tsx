@@ -158,6 +158,12 @@ const DashboardHome = () => {
     },
   ];
 
+  // In your DashboardHome component, add:
+useEffect(() => {
+  console.log('Dashboard Profile:', profile);
+  console.log('Dashboard Earnings from profile:', profile?.approved_earnings);
+}, [profile]);
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy':

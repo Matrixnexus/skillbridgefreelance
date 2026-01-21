@@ -57,13 +57,35 @@ const Earnings = () => {
 
   /* ───────────────────────── FETCH DATA ───────────────────────── */
   useEffect(() => {
+// In Earnings.tsx, modify the fetchData function:
     const fetchData = async () => {
       if (!user) return;
 
       try {
         setIsLoading(true);
         
-        // Fetch transactions
+        // FORCE fresh data - add timestamp to bypass cache
+        const timestamp = new Date().getTime();
+        
+        // 1. Get fresh profile data directly
+        const { data: freshProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        console.log('FRESH PROFILE DATA:', freshProfile); // DEBUG
+        
+        if (freshProfile) {
+          setPaymentSummary({
+            pending: 0, // We'll calculate these next
+            total: freshProfile.total_earnings || 0,
+            approved: freshProfile.approved_earnings || 0,
+            rejected: 0
+          });
+        }
+        
+        // 2. Fetch transactions
         const { data: txData } = await supabase
           .from('transactions')
           .select('*')
@@ -72,14 +94,14 @@ const Earnings = () => {
 
         setTransactions(txData || []);
 
-        // Fetch submission payments data
+        // 3. Calculate from submissions (for comparison)
         const { data: submissionsData } = await supabase
           .from('job_submissions')
           .select('status, payment_amount')
           .eq('user_id', user.id);
 
         if (submissionsData) {
-          const summary = submissionsData.reduce((acc, submission) => {
+          const calculated = submissionsData.reduce((acc, submission) => {
             acc.total += submission.payment_amount || 0;
             
             switch (submission.status) {
@@ -95,9 +117,11 @@ const Earnings = () => {
             }
             return acc;
           }, { pending: 0, total: 0, approved: 0, rejected: 0 });
-
-          setPaymentSummary(summary);
+          
+          console.log('CALCULATED FROM SUBMISSIONS:', calculated); // DEBUG
+          console.log('FROM PROFILES TABLE:', freshProfile?.approved_earnings, freshProfile?.total_earnings); // DEBUG
         }
+        
       } catch (error) {
         console.error('Error fetching earnings data:', error);
       } finally {
@@ -106,6 +130,34 @@ const Earnings = () => {
     };
 
     fetchData();
+  }, [user]);
+
+    // Add this useEffect to listen for real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to profile changes
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('PROFILE UPDATED REAL-TIME:', payload.new);
+          // Force refresh data
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   /* ───────────────────── WITHDRAW HELPERS ───────────────────── */
@@ -477,3 +529,7 @@ const EarningItem = ({
 );
 
 export default Earnings;
+
+function fetchData() {
+  throw new Error('Function not implemented.');
+}
