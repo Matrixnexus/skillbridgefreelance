@@ -286,29 +286,6 @@ const Checkout = () => {
             </div>
           </div>
         </div>
-
-        <div className="text-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const formHtml = `<div>
-  <style>.pp-${currentPlan.hostedButtonId}{text-align:center;border:none;border-radius:0.25rem;min-width:11.625rem;padding:0 2rem;height:2.625rem;font-weight:bold;background-color:#FFD140;color:#000000;font-family:"Helvetica Neue",Arial,sans-serif;font-size:1rem;line-height:1.25rem;cursor:pointer;}</style>
-  <form action="${currentPlan.paymentLink}" method="post" target="_blank" style="display:inline-grid;justify-items:center;align-content:start;gap:0.5rem;">
-    <input class="pp-${currentPlan.hostedButtonId}" type="submit" value="Buy Now" />
-    <img src="https://www.paypalobjects.com/images/Debit_Credit.svg" alt="cards" />
-    <section style="font-size: 0.75rem;"> Powered by <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-wordmark-color.svg" alt="paypal" style="height:0.875rem;vertical-align:middle;"/></section>
-  </form>
-</div>`;
-              copyToClipboard(formHtml, 'HTML Button Code');
-            }}
-            className="gap-2"
-            disabled={isProcessing}
-          >
-            {copiedButton === 'HTML Button Code' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            Copy HTML Button Code
-          </Button>
-        </div>
       </div>
     );
   };
@@ -361,7 +338,7 @@ const Checkout = () => {
             <Button
               variant="outline"
               onClick={() => setShowQRCode(!showQRCode)}
-              className="gap-2"
+              className="gap-2 bg-gray-900 hover:bg-gray-800 text-white border-gray-700" 
               disabled={isProcessing}
             >
               <QrCode className="w-4 h-4" />
