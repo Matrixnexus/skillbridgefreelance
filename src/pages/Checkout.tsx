@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, Loader2, Shield, ExternalLink, CreditCard, Lock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Loader2, Shield, CreditCard, Lock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 declare global {
@@ -21,28 +21,39 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPayPalScriptLoaded, setIsPayPalScriptLoaded] = useState(false);
-  const [paypalOrderId, setPaypalOrderId] = useState<string | null>(null);
 
   const planDetails = {
-    regular: { name: 'Regular', price: 15, tier: 'regular' },
-    pro: { name: 'Pro', price: 25, tier: 'pro' },
-    vip: { name: 'VIP', price: 45, tier: 'vip' },
+    regular: { 
+      name: 'Regular', 
+      price: 15, 
+      tier: 'regular',
+      hostedButtonId: 'W3KQGR87LQRH8',
+      containerId: 'paypal-container-W3KQGR87LQRH8'
+    },
+    pro: { 
+      name: 'Pro', 
+      price: 25, 
+      tier: 'pro',
+      hostedButtonId: 'BGAP4WS73X4DQ',
+      containerId: 'paypal-container-BGAP4WS73X4DQ'
+    },
+    vip: { 
+      name: 'VIP', 
+      price: 45, 
+      tier: 'vip',
+      hostedButtonId: 'LZRR3X4VP4PQL',
+      containerId: 'paypal-container-LZRR3X4VP4PQL'
+    },
   };
 
   const currentPlan = plan && plan in planDetails ? planDetails[plan as keyof typeof planDetails] : null;
 
-  // Load LIVE PayPal SDK
+  // Load PayPal SDK with hosted buttons
   useEffect(() => {
-    const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+    const clientId = 'BAARlfOaV0tKM0XdcJy3EwF8wtdp3MNBD9IGtP-lvMZA1BrSWO4A8apJv37DAZDBX72a0ap3Of-Q6O24PA';
     
-    console.log('Loading LIVE PayPal with Client ID:', clientId ? 'Set' : 'Missing');
+    console.log('Loading PayPal SDK with Hosted Buttons for:', currentPlan?.name);
     
-    if (!clientId) {
-      console.error('PayPal Client ID is missing. Check your environment variables.');
-      setError('Payment system configuration error. Please contact support.');
-      return;
-    }
-
     // Remove any existing PayPal script
     const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
     if (existingScript) {
@@ -50,16 +61,17 @@ const Checkout = () => {
     }
 
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&disable-funding=venmo,card`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=hosted-buttons&disable-funding=venmo&currency=USD`;
     script.async = true;
     
     script.onload = () => {
-      console.log('✅ LIVE PayPal SDK loaded successfully');
+      console.log('✅ PayPal SDK with Hosted Buttons loaded successfully');
       setIsPayPalScriptLoaded(true);
+      initializePayPalHostedButton();
     };
     
     script.onerror = (err) => {
-      console.error('❌ Failed to load LIVE PayPal SDK:', err);
+      console.error('❌ Failed to load PayPal SDK:', err);
       setError('Failed to load payment system. Please refresh the page or contact support.');
     };
     
@@ -71,7 +83,7 @@ const Checkout = () => {
         script.parentNode.removeChild(script);
       }
     };
-  }, []);
+  }, [currentPlan]);
 
   useEffect(() => {
     if (!user) {
@@ -85,79 +97,37 @@ const Checkout = () => {
     }
   }, [user, currentPlan, navigate]);
 
-  const createPayPalOrder = async () => {
-    if (!user || !currentPlan) return null;
-
-    try {
-      console.log('Creating LIVE PayPal order for:', currentPlan.tier);
-      
-      const { data, error } = await supabase.functions.invoke('create-paypal-order', {
-        body: {
-          tier: currentPlan.tier,
-          userId: user.id,
-          userEmail: user.email
-        }
-      });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Failed to create payment order');
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to create payment order');
-      }
-
-      console.log('LIVE PayPal order created:', data.orderId);
-      setPaypalOrderId(data.orderId);
-      return data.orderId;
-    } catch (error: any) {
-      console.error('Error creating PayPal order:', error);
-      throw error;
-    }
-  };
-
-  const initializePayPalButtons = () => {
+  const initializePayPalHostedButton = () => {
     if (!window.paypal || !isPayPalScriptLoaded || !currentPlan) {
-      console.log('PayPal SDK not ready');
+      console.log('PayPal SDK not ready yet');
       return;
     }
 
-    const container = document.getElementById('paypal-button-container');
+    // Clear any existing container content
+    const container = document.getElementById(currentPlan.containerId);
     if (container) {
       container.innerHTML = '';
     }
 
     try {
-      window.paypal.Buttons({
-        style: {
-          shape: 'rect',
-          color: 'gold',
-          layout: 'vertical',
-          label: 'paypal',
-          height: 55,
-          tagline: false
+      // Initialize the hosted button for the specific plan
+      paypal.HostedButtons({
+        hostedButtonId: currentPlan.hostedButtonId,
+        onInit: (data: any, actions: any) => {
+          console.log(`✅ Hosted button initialized for ${currentPlan.name}`);
         },
-        
-        createOrder: async (data: any, actions: any) => {
-          console.log('LIVE PayPal createOrder triggered');
+        onClick: () => {
+          console.log(`User clicked ${currentPlan.name} payment button`);
           setIsProcessing(true);
           setError(null);
-          
-          try {
-            const orderId = await createPayPalOrder();
-            setIsProcessing(false);
-            return orderId;
-          } catch (error: any) {
-            setIsProcessing(false);
-            setError(error.message || 'Failed to create payment order.');
-            throw error;
-          }
         },
-        
+        onError: (err: any) => {
+          console.error('❌ PayPal button error:', err);
+          setIsProcessing(false);
+          setError('Payment system error. Please try again or contact support.');
+        },
         onApprove: async (data: any, actions: any) => {
-          console.log('✅ LIVE PayPal payment approved:', data.orderID);
-          setIsProcessing(true);
+          console.log(`✅ Payment approved for ${currentPlan.name}, order ID:`, data.orderID);
           
           try {
             // Capture payment
@@ -167,7 +137,8 @@ const Checkout = () => {
 
             if (captureError || !captureData?.success) {
               console.warn('Capture may have failed, redirecting for verification');
-              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}`;
+              // Redirect to verification page
+              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}&plan=${currentPlan.tier}`;
               return;
             }
 
@@ -194,22 +165,15 @@ const Checkout = () => {
             });
             
             setTimeout(() => {
-              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}`;
+              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}&plan=${currentPlan.tier}`;
             }, 1000);
             
           } finally {
             setIsProcessing(false);
           }
         },
-        
-        onError: (err: any) => {
-          console.error('❌ LIVE PayPal error:', err);
-          setIsProcessing(false);
-          setError('Payment failed. Please try again or use a different payment method.');
-        },
-        
         onCancel: (data: any) => {
-          console.log('LIVE PayPal payment cancelled');
+          console.log(`Payment cancelled for ${currentPlan.name}`);
           setIsProcessing(false);
           toast({
             title: 'Payment Cancelled',
@@ -217,48 +181,15 @@ const Checkout = () => {
             variant: 'destructive',
           });
         }
-        
-      }).render('#paypal-button-container');
+      }).render(`#${currentPlan.containerId}`);
       
-      console.log('✅ LIVE PayPal buttons initialized');
+      console.log(`✅ PayPal hosted button rendered for ${currentPlan.name}`);
       
     } catch (error) {
-      console.error('Error initializing PayPal buttons:', error);
+      console.error('Error initializing PayPal hosted button:', error);
       setError('Payment system error. Please try the manual option below.');
     }
   };
-
-  const handleDirectPayPal = () => {
-    if (!user || !currentPlan) return;
-    
-    setIsProcessing(true);
-    
-    createPayPalOrder()
-      .then(orderId => {
-        if (orderId) {
-          // Direct PayPal checkout URL (LIVE)
-          const paypalCheckoutUrl = `https://www.paypal.com/checkoutnow?token=${orderId}`;
-          window.open(paypalCheckoutUrl, '_blank', 'noopener,noreferrer');
-          
-          toast({
-            title: 'PayPal Checkout Opened',
-            description: 'Complete your payment in the PayPal window.',
-          });
-        }
-      })
-      .catch(error => {
-        setError(error.message);
-      })
-      .finally(() => {
-        setIsProcessing(false);
-      });
-  };
-
-  useEffect(() => {
-    if (isPayPalScriptLoaded && currentPlan) {
-      initializePayPalButtons();
-    }
-  }, [currentPlan, isPayPalScriptLoaded]);
 
   if (!currentPlan) {
     return null;
@@ -307,6 +238,10 @@ const Checkout = () => {
                 <CheckCircle className="w-4 h-4 text-primary" />
                 <span>Automatic activation after payment</span>
               </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                <span>Secure hosted payment button</span>
+              </div>
             </div>
           </div>
 
@@ -318,7 +253,7 @@ const Checkout = () => {
                 <div className="flex items-start gap-3">
                   <Lock className="w-5 h-5 text-green-500 mt-0.5" />
                   <div>
-                    <p className="text-sm text-green-500 font-medium mb-1">Live PayPal Payment</p>
+                    <p className="text-sm text-green-500 font-medium mb-1">Live PayPal Hosted Payment</p>
                     <p className="text-sm text-foreground">
                       This is a <strong>real payment</strong>. Click below to pay ${currentPlan.price} via PayPal.
                     </p>
@@ -336,7 +271,7 @@ const Checkout = () => {
                   <span className="text-sm text-muted-foreground">USD - Real Payment</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Monthly subscription - Live payment
+                  Monthly subscription - Live hosted payment button
                 </p>
               </div>
 
@@ -362,26 +297,19 @@ const Checkout = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* PayPal Button Container */}
-              <div id="paypal-button-container" className="min-h-[55px]">
-                {!isPayPalScriptLoaded && (
-                  <div className="text-center py-4">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Loading PayPal...</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="text-center">
-                <Button
-                  onClick={handleDirectPayPal}
-                  variant="outline"
-                  className="w-full"
-                  disabled={isProcessing}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open PayPal in New Window
-                </Button>
+              {/* PayPal Hosted Button Container */}
+              <div className="min-h-[55px] flex flex-col items-center">
+                <div id={currentPlan.containerId} className="w-full max-w-sm">
+                  {!isPayPalScriptLoaded && (
+                    <div className="text-center py-4">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Loading PayPal...</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Click the PayPal button to complete your payment
+                </p>
               </div>
               
               <div className="text-center">
@@ -399,7 +327,7 @@ const Checkout = () => {
           <div className="text-center text-sm text-muted-foreground mt-8 pt-6 border-t border-border">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Lock className="w-4 h-4" />
-              <p>Secure live payment via PayPal</p>
+              <p>Secure live payment via PayPal Hosted Button</p>
             </div>
             <p className="text-xs">You will be redirected for automatic verification after payment</p>
           </div>
