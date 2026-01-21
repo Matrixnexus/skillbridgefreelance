@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,53 +21,62 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPayPalScriptLoaded, setIsPayPalScriptLoaded] = useState(false);
+  const scriptLoadedRef = useRef(false);
+  const buttonsRenderedRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const paypalContainerRef = useRef<HTMLDivElement>(null); // Add ref for container
 
   const planDetails = {
     regular: { 
       name: 'Regular', 
       price: 15, 
       tier: 'regular',
-      hostedButtonId: 'W3KQGR87LQRH8',
-      containerId: 'paypal-container-W3KQGR87LQRH8'
+      hostedButtonId: 'W3KQGR87LQRH8'
     },
     pro: { 
       name: 'Pro', 
       price: 25, 
       tier: 'pro',
-      hostedButtonId: 'BGAP4WS73X4DQ',
-      containerId: 'paypal-container-BGAP4WS73X4DQ'
+      hostedButtonId: 'BGAP4WS73X4DQ'
     },
     vip: { 
       name: 'VIP', 
       price: 45, 
       tier: 'vip',
-      hostedButtonId: 'LZRR3X4VP4PQL',
-      containerId: 'paypal-container-LZRR3X4VP4PQL'
+      hostedButtonId: 'LZRR3X4VP4PQL'
     },
   };
 
   const currentPlan = plan && plan in planDetails ? planDetails[plan as keyof typeof planDetails] : null;
 
-  // Load PayPal SDK with hosted buttons
+  // Load PayPal SDK once
   useEffect(() => {
-    const clientId = 'BAARlfOaV0tKM0XdcJy3EwF8wtdp3MNBD9IGtP-lvMZA1BrSWO4A8apJv37DAZDBX72a0ap3Of-Q6O24PA';
-    
-    console.log('Loading PayPal SDK with Hosted Buttons for:', currentPlan?.name);
-    
-    // Remove any existing PayPal script
-    const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
-    if (existingScript) {
-      existingScript.remove();
+    if (scriptLoadedRef.current) {
+      console.log('PayPal script already loaded');
+      setIsPayPalScriptLoaded(true);
+      return;
     }
 
+    console.log('Loading PayPal SDK for:', currentPlan?.name);
+    
+    // Check if PayPal SDK is already loaded globally
+    if (window.paypal) {
+      console.log('PayPal SDK already exists in window');
+      scriptLoadedRef.current = true;
+      setIsPayPalScriptLoaded(true);
+      return;
+    }
+
+    const clientId = 'BAARlfOaV0tKM0XdcJy3EwF8wtdp3MNBD9IGtP-lvMZA1BrSWO4A8apJv37DAZDBX72a0ap3Of-Q6O24PA';
+    
     const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=hosted-buttons&disable-funding=venmo&currency=USD`;
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=buttons&disable-funding=venmo&currency=USD`;
     script.async = true;
     
     script.onload = () => {
-      console.log('✅ PayPal SDK with Hosted Buttons loaded successfully');
+      console.log('✅ PayPal SDK loaded successfully');
+      scriptLoadedRef.current = true;
       setIsPayPalScriptLoaded(true);
-      initializePayPalHostedButton();
     };
     
     script.onerror = (err) => {
@@ -78,12 +87,9 @@ const Checkout = () => {
     document.head.appendChild(script);
 
     return () => {
-      // Cleanup on component unmount
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
+      // Don't remove script on component unmount
     };
-  }, [currentPlan]);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -97,99 +103,188 @@ const Checkout = () => {
     }
   }, [user, currentPlan, navigate]);
 
-  const initializePayPalHostedButton = () => {
-    if (!window.paypal || !isPayPalScriptLoaded || !currentPlan) {
-      console.log('PayPal SDK not ready yet');
+  // Initialize PayPal button when script is loaded and plan is selected
+  useEffect(() => {
+    if (!isPayPalScriptLoaded || !currentPlan || !window.paypal) {
       return;
     }
 
-    // Clear any existing container content
-    const container = document.getElementById(currentPlan.containerId);
-    if (container) {
-      container.innerHTML = '';
+    // Clean up previous button if exists
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
     }
 
-    try {
-      // Initialize the hosted button for the specific plan
-      paypal.HostedButtons({
-        hostedButtonId: currentPlan.hostedButtonId,
-        onInit: (data: any, actions: any) => {
-          console.log(`✅ Hosted button initialized for ${currentPlan.name}`);
-        },
-        onClick: () => {
-          console.log(`User clicked ${currentPlan.name} payment button`);
-          setIsProcessing(true);
-          setError(null);
-        },
-        onError: (err: any) => {
-          console.error('❌ PayPal button error:', err);
-          setIsProcessing(false);
-          setError('Payment system error. Please try again or contact support.');
-        },
-        onApprove: async (data: any, actions: any) => {
-          console.log(`✅ Payment approved for ${currentPlan.name}, order ID:`, data.orderID);
-          
-          try {
-            // Capture payment
-            const { data: captureData, error: captureError } = await supabase.functions.invoke('capture-paypal-order', {
-              body: { orderId: data.orderID }
-            });
+    if (buttonsRenderedRef.current) {
+      console.log('Button already rendered, skipping re-render');
+      return;
+    }
 
-            if (captureError || !captureData?.success) {
-              console.warn('Capture may have failed, redirecting for verification');
-              // Redirect to verification page
-              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}&plan=${currentPlan.tier}`;
-              return;
-            }
+    console.log('Initializing PayPal button for:', currentPlan.name);
 
-            // Success - refresh and redirect
-            await refreshProfile();
-            
-            toast({
-              title: 'Payment Successful!',
-              description: `Your ${currentPlan.name} membership has been activated.`,
-              variant: 'default',
-            });
-            
-            setTimeout(() => {
-              navigate('/dashboard');
-            }, 2000);
-            
-          } catch (error: any) {
-            console.error('Payment processing error:', error);
-            
-            // Redirect to verification page as fallback
-            toast({
-              title: 'Verifying Payment',
-              description: 'Redirecting for payment verification...',
-            });
-            
-            setTimeout(() => {
-              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}&plan=${currentPlan.tier}`;
-            }, 1000);
-            
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-        onCancel: (data: any) => {
-          console.log(`Payment cancelled for ${currentPlan.name}`);
-          setIsProcessing(false);
-          toast({
-            title: 'Payment Cancelled',
-            description: 'You cancelled the payment process.',
-            variant: 'destructive',
-          });
+    const initializeButton = () => {
+      // Use ref instead of getElementById for more reliability
+      const container = paypalContainerRef.current;
+      if (!container) {
+        console.error('PayPal container ref not found');
+        // Try DOM lookup as fallback
+        const domContainer = document.getElementById('paypal-button-container');
+        if (!domContainer) {
+          console.error('PayPal container not found in DOM either');
+          return;
         }
-      }).render(`#${currentPlan.containerId}`);
-      
-      console.log(`✅ PayPal hosted button rendered for ${currentPlan.name}`);
-      
-    } catch (error) {
-      console.error('Error initializing PayPal hosted button:', error);
-      setError('Payment system error. Please try the manual option below.');
-    }
-  };
+      }
+
+      const targetContainer = container || document.getElementById('paypal-button-container');
+      if (!targetContainer) {
+        console.error('No PayPal container found');
+        return;
+      }
+
+      // Clear container
+      targetContainer.innerHTML = '';
+
+      try {
+        // Use regular PayPal Buttons API with hosted button ID
+        const button = window.paypal.Buttons({
+          // Use hosted button ID
+          hostedButtonId: currentPlan.hostedButtonId,
+          
+          style: {
+            layout: 'vertical',
+            shape: 'rect',
+            color: 'gold',
+            label: 'paypal',
+            tagline: false,
+            height: 55
+          },
+
+          onClick: () => {
+            console.log(`User clicked ${currentPlan.name} payment button`);
+            setIsProcessing(true);
+            setError(null);
+          },
+
+          createOrder: (data: any, actions: any) => {
+            console.log('Creating order via hosted button:', currentPlan.hostedButtonId);
+            // For hosted buttons, PayPal handles order creation
+            return actions.order.create({
+              purchase_units: [{
+                amount: {
+                  value: currentPlan.price.toString(),
+                  currency_code: 'USD'
+                }
+              }]
+            });
+          },
+
+          onApprove: async (data: any, actions: any) => {
+            console.log(`✅ Payment approved for ${currentPlan.name}, order ID:`, data.orderID);
+            setIsProcessing(true);
+            
+            try {
+              // Capture payment
+              const { data: captureData, error: captureError } = await supabase.functions.invoke('capture-paypal-order', {
+                body: { orderId: data.orderID }
+              });
+
+              if (captureError || !captureData?.success) {
+                console.warn('Capture may have failed, redirecting for verification');
+                window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}&plan=${currentPlan.tier}`;
+                return;
+              }
+
+              // Success - refresh and redirect
+              await refreshProfile();
+              
+              toast({
+                title: 'Payment Successful!',
+                description: `Your ${currentPlan.name} membership has been activated.`,
+                variant: 'default',
+              });
+              
+              setTimeout(() => {
+                navigate('/dashboard');
+              }, 2000);
+              
+            } catch (error: any) {
+              console.error('Payment processing error:', error);
+              
+              toast({
+                title: 'Verifying Payment',
+                description: 'Redirecting for payment verification...',
+              });
+              
+              setTimeout(() => {
+                window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}&plan=${currentPlan.tier}`;
+              }, 1000);
+              
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+
+          onError: (err: any) => {
+            console.error('❌ PayPal button error:', err);
+            setIsProcessing(false);
+            setError('Payment failed. Please try again or contact support.');
+          },
+
+          onCancel: (data: any) => {
+            console.log(`Payment cancelled for ${currentPlan.name}`);
+            setIsProcessing(false);
+            toast({
+              title: 'Payment Cancelled',
+              description: 'You cancelled the payment process.',
+              variant: 'destructive',
+            });
+          }
+
+        });
+
+        if (button.isEligible()) {
+          button.render(targetContainer).then(() => {
+            console.log(`✅ PayPal button rendered for ${currentPlan.name}`);
+            buttonsRenderedRef.current = true;
+            
+            // Store cleanup function
+            cleanupRef.current = () => {
+              if (targetContainer) {
+                targetContainer.innerHTML = '';
+              }
+              buttonsRenderedRef.current = false;
+            };
+          }).catch((err: any) => {
+            console.error('Error rendering PayPal button:', err);
+            setError('Failed to initialize payment button. Please refresh the page.');
+          });
+        } else {
+          console.error('PayPal button not eligible');
+          setError('PayPal payment is not available. Please try a different payment method.');
+        }
+        
+      } catch (error) {
+        console.error('Error initializing PayPal button:', error);
+        setError('Payment system error. Please try again or contact support.');
+        setIsProcessing(false);
+      }
+    };
+
+    // Use requestAnimationFrame for better timing
+    const rafId = requestAnimationFrame(() => {
+      setTimeout(() => {
+        initializeButton();
+      }, 100);
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
+    };
+  }, [currentPlan, isPayPalScriptLoaded, user, navigate, toast, refreshProfile]);
 
   if (!currentPlan) {
     return null;
@@ -297,9 +392,15 @@ const Checkout = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* PayPal Hosted Button Container */}
+              {/* PayPal Button Container - Must stay mounted */}
               <div className="min-h-[55px] flex flex-col items-center">
-                <div id={currentPlan.containerId} className="w-full max-w-sm">
+                {/* Use both ref and id for maximum reliability */}
+                <div 
+                  ref={paypalContainerRef}
+                  id="paypal-button-container" 
+                  className="w-full max-w-sm"
+                  key={`paypal-container-${currentPlan.tier}`} // Force re-render on plan change
+                >
                   {!isPayPalScriptLoaded && (
                     <div className="text-center py-4">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
