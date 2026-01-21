@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 
@@ -36,12 +37,14 @@ const CTASection = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button variant="hero" size="xl" className="group">
-                  Get Started — It's Free to Join
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <Button variant="hero" size="xl" className="group" asChild>
+                  <Link to="/auth">
+                    Get Started — It's Free to Join
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
                 </Button>
-                <Button variant="heroOutline" size="xl">
-                  View Pricing Plans
+                <Button variant="heroOutline" size="xl" asChild>
+                  <Link to="/pricing">View Pricing Plans</Link>
                 </Button>
               </div>
               

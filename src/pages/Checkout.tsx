@@ -26,19 +26,23 @@ const Checkout = () => {
   const planDetails = {
     regular: { name: 'Regular', price: 15, tier: 'regular' },
     pro: { name: 'Pro', price: 25, tier: 'pro' },
-    vip: { name: 'VIP', price: 49, tier: 'vip' },
-    test: { name: 'Test', price: 1, tier: 'test' }, // Test plan
+    vip: { name: 'VIP', price: 45, tier: 'vip' },
   };
 
   const currentPlan = plan && plan in planDetails ? planDetails[plan as keyof typeof planDetails] : null;
 
   // Load LIVE PayPal SDK
   useEffect(() => {
-    // Use environment variable or your live client ID
-    const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AXq3-6fwI858rZdCNe6fpbn8uITDoFzL5ZCeCb8zYJLsUz0i0yjHNKmtoqhGp21DMHt9UH721FiV7L0M';
+    const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
     
     console.log('Loading LIVE PayPal with Client ID:', clientId ? 'Set' : 'Missing');
     
+    if (!clientId) {
+      console.error('PayPal Client ID is missing. Check your environment variables.');
+      setError('Payment system configuration error. Please contact support.');
+      return;
+    }
+
     // Remove any existing PayPal script
     const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
     if (existingScript) {
@@ -62,7 +66,10 @@ const Checkout = () => {
     document.head.appendChild(script);
 
     return () => {
-      // Keep script loaded
+      // Cleanup on component unmount
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
     };
   }, []);
 
@@ -160,7 +167,6 @@ const Checkout = () => {
 
             if (captureError || !captureData?.success) {
               console.warn('Capture may have failed, redirecting for verification');
-              // Still redirect for verification
               window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}`;
               return;
             }
@@ -275,12 +281,10 @@ const Checkout = () => {
               <Shield className="w-8 h-8 text-primary" />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {currentPlan.tier === 'test' ? 'Test Payment' : 'Complete Your Purchase'}
+              Complete Your Purchase
             </h1>
             <p className="text-muted-foreground">
-              {currentPlan.tier === 'test' 
-                ? 'Test the payment system with $1' 
-                : `Upgrade to ${currentPlan.name} membership`}
+              Upgrade to {currentPlan.name} membership
             </p>
           </div>
 
@@ -303,12 +307,6 @@ const Checkout = () => {
                 <CheckCircle className="w-4 h-4 text-primary" />
                 <span>Automatic activation after payment</span>
               </div>
-              {currentPlan.tier === 'test' && (
-                <div className="flex items-center gap-2 text-yellow-500">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Test payment only - $1</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -324,11 +322,6 @@ const Checkout = () => {
                     <p className="text-sm text-foreground">
                       This is a <strong>real payment</strong>. Click below to pay ${currentPlan.price} via PayPal.
                     </p>
-                    {currentPlan.tier === 'test' && (
-                      <p className="text-sm text-yellow-500 mt-1">
-                        ⚠️ Test with $1 first to verify the system works.
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -343,9 +336,7 @@ const Checkout = () => {
                   <span className="text-sm text-muted-foreground">USD - Real Payment</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {currentPlan.tier === 'test' 
-                    ? 'Test payment to verify system' 
-                    : 'Monthly subscription - Live payment'}
+                  Monthly subscription - Live payment
                 </p>
               </div>
 
@@ -411,11 +402,6 @@ const Checkout = () => {
               <p>Secure live payment via PayPal</p>
             </div>
             <p className="text-xs">You will be redirected for automatic verification after payment</p>
-            {currentPlan.tier === 'test' && (
-              <p className="text-xs text-yellow-500 mt-1">
-                ⚠️ This is a test payment. Use $1 to verify the system works.
-              </p>
-            )}
           </div>
         </div>
       </div>
