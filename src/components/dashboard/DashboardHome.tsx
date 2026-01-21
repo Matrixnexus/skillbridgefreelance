@@ -24,28 +24,86 @@ interface Job {
   category: { name: string } | null;
 }
 
+interface PaymentSummary {
+  pending: number;
+  total: number;
+  approved: number;
+  rejected: number;
+}
+
 const DashboardHome = () => {
-  const { profile } = useAuth();
+  const { user, profile: authProfile } = useAuth();
+  const [profile, setProfile] = useState(authProfile);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [paymentSummary, setPaymentSummary] = useState<PaymentSummary>({
+    pending: 0,
+    total: 0,
+    approved: 0,
+    rejected: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRecentJobs = async () => {
-      const { data } = await supabase
-        .from('jobs')
-        .select('id, title, payment_amount, difficulty, required_tier, category:job_categories(name)')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(5);
+    const fetchDashboardData = async () => {
+      if (!user) return;
+      setIsLoading(true);
 
-      if (data) {
-        setRecentJobs(data as unknown as Job[]);
+      try {
+        // Fetch updated profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileData) setProfile(profileData);
+
+        // Fetch recent jobs
+        const { data: jobsData } = await supabase
+          .from('jobs')
+          .select('id, title, payment_amount, difficulty, required_tier, category:job_categories(name)')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (jobsData) setRecentJobs(jobsData as unknown as Job[]);
+
+        // Fetch submissions for payment summary
+        const { data: submissions } = await supabase
+          .from('job_submissions')
+          .select('status, payment_amount')
+          .eq('user_id', user.id);
+
+        if (submissions) {
+          const summary = submissions.reduce(
+            (acc, sub) => {
+              acc.total += sub.payment_amount || 0;
+              switch (sub.status) {
+                case 'pending':
+                  acc.pending += sub.payment_amount || 0;
+                  break;
+                case 'approved':
+                  acc.approved += sub.payment_amount || 0;
+                  break;
+                case 'rejected':
+                  acc.rejected += sub.payment_amount || 0;
+                  break;
+              }
+              return acc;
+            },
+            { pending: 0, total: 0, approved: 0, rejected: 0 }
+          );
+          setPaymentSummary(summary);
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    fetchRecentJobs();
-  }, []);
+    fetchDashboardData();
+  }, [user]);
 
   const getDailyTaskLimit = () => {
     switch (profile?.membership_tier) {
@@ -72,14 +130,14 @@ const DashboardHome = () => {
   const stats = [
     {
       name: 'Total Earnings',
-      value: `$${profile?.total_earnings?.toFixed(2) || '0.00'}`,
+      value: `$${paymentSummary.total.toFixed(2)}`,
       icon: DollarSign,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
     },
     {
       name: 'Pending Earnings',
-      value: `$${profile?.pending_earnings?.toFixed(2) || '0.00'}`,
+      value: `$${paymentSummary.pending.toFixed(2)}`,
       icon: Clock,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-400/10',

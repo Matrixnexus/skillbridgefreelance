@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Zap, Crown, ArrowRight, ArrowLeft, Shield, Coins } from 'lucide-react';
+import { Check, Star, Zap, Crown, ArrowRight, ArrowLeft, Shield, CreditCard } from 'lucide-react';
 
 const Pricing = () => {
   const { user, profile } = useAuth();
@@ -73,18 +73,11 @@ const Pricing = () => {
   ];
 
   const handleSelectPlan = (tier: string) => {
-    console.log('DEBUG: handleSelectPlan called with tier:', tier);
-    console.log('DEBUG: User exists?', !!user);
-    
-    // TEST: Try direct navigation first
-    window.location.href = `/checkout?plan=${tier}`;
-    
-    // Original code (commented out for testing):
-    // if (!user) {
-    //   navigate('/auth');
-    // } else {
-    //   navigate(`/checkout?plan=${tier}`);
-    // }
+    if (!user) {
+      navigate('/auth');
+    } else {
+      navigate(`/checkout?plan=${tier}`);
+    }
   };
 
   const isCurrentPlan = (tier: string) => {
@@ -122,39 +115,23 @@ const Pricing = () => {
             </p>
           </div>
 
-          {/* TEST BUTTONS - Add these for debugging */}
-          <div className="flex justify-center gap-4 mb-8">
-            <Button 
-              onClick={() => window.location.href = '/checkout?plan=pro'}
-              variant="outline"
-            >
-              TEST: Direct Pro Checkout
-            </Button>
-            <Button 
-              onClick={() => navigate('/checkout?plan=pro')}
-              variant="outline"
-            >
-              TEST: Router Pro Checkout
-            </Button>
-          </div>
-
           {/* Payment Method Notice */}
           <div className="max-w-4xl mx-auto mb-8">
-            <div className="glass-card p-6 border border-purple-500/20">
+            <div className="glass-card p-6 border border-blue-500/20">
               <div className="flex flex-col md:flex-row items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                  <Coins className="w-6 h-6 text-purple-400" />
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-6 h-6 text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Crypto Payments Now Available</h3>
+                  <h3 className="font-semibold text-foreground mb-1">Secure PayPal Payments</h3>
                   <p className="text-muted-foreground">
-                    All plans are paid using <strong>USDT via Tron Network (TRC20)</strong>. Easy payments through exchanges like Binance, OKX, or any Tron-compatible wallet.
+                    All plans are paid securely via PayPal. Your payment is processed directly through PayPal's secure system.
                   </p>
                 </div>
                 <div className="flex-shrink-0">
-                  <div className="flex items-center gap-2 text-sm bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-full">
+                  <div className="flex items-center gap-2 text-sm bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full">
                     <Shield className="w-3 h-3" />
-                    <span>Secure Crypto Payments</span>
+                    <span>PCI Compliant</span>
                   </div>
                 </div>
               </div>
@@ -210,11 +187,11 @@ const Pricing = () => {
                     <span className="text-muted-foreground">/{plan.period}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center">
-                      <Coins className="w-2.5 h-2.5 text-purple-400" />
+                    <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                      <CreditCard className="w-2.5 h-2.5 text-blue-400" />
                     </div>
-                    <span className="text-sm text-purple-400 font-medium">
-                      = {plan.price} USDT
+                    <span className="text-sm text-blue-400 font-medium">
+                      PayPal Secure Payment
                     </span>
                   </div>
                 </div>
@@ -248,10 +225,10 @@ const Pricing = () => {
             ))}
           </div>
 
-          {/* Rest of the component remains the same... */}
+          {/* Trust Note */}
           <div className="text-center mt-12">
             <p className="text-muted-foreground text-sm">
-              All plans include guaranteed generous customer care. No questions asked.
+              All plans include guaranteed payments and dedicated customer care.
             </p>
           </div>
 
@@ -266,7 +243,23 @@ const Pricing = () => {
                   What payment methods do you accept?
                 </h3>
                 <p className="text-muted-foreground">
-                  We accept <strong>USDT via Tron Network (TRC20)</strong> for all subscription payments.
+                  We accept secure payments via PayPal. You can pay with your PayPal balance, credit/debit card, or bank account through PayPal's secure checkout.
+                </p>
+              </div>
+              <div className="glass-card p-6">
+                <h3 className="font-semibold text-foreground mb-2">
+                  How does the payment process work?
+                </h3>
+                <p className="text-muted-foreground">
+                  When you select a plan, you'll be redirected to PayPal's secure checkout. After payment confirmation, your membership will be activated automatically.
+                </p>
+              </div>
+              <div className="glass-card p-6">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Can I upgrade or downgrade my plan?
+                </h3>
+                <p className="text-muted-foreground">
+                  Yes! You can upgrade at any time and the difference will be prorated. Downgrades take effect at the end of your billing cycle.
                 </p>
               </div>
             </div>

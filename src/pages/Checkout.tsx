@@ -3,8 +3,14 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle, Loader2, Shield, ExternalLink, CreditCard, Lock, AlertCircle, Copy, Check, QrCode } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Loader2, Shield, ExternalLink, CreditCard, Lock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+declare global {
+  interface Window {
+    paypal: any;
+  }
+}
 
 const Checkout = () => {
   const [searchParams] = useSearchParams();
@@ -13,156 +19,242 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentInitiated, setPaymentInitiated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [usdtAmount, setUsdtAmount] = useState<number | null>(null);
+  const [isPayPalScriptLoaded, setIsPayPalScriptLoaded] = useState(false);
+  const [paypalOrderId, setPaypalOrderId] = useState<string | null>(null);
 
   const planDetails = {
     regular: { name: 'Regular', price: 15, tier: 'regular' },
     pro: { name: 'Pro', price: 25, tier: 'pro' },
     vip: { name: 'VIP', price: 49, tier: 'vip' },
+    test: { name: 'Test', price: 1, tier: 'test' }, // Test plan
   };
 
   const currentPlan = plan && plan in planDetails ? planDetails[plan as keyof typeof planDetails] : null;
-  
-  // Tron Network USDT (TRC20) Address
-  const tronAddress = 'TMo91D2bi4EQUGBQDQyFF7rvvNGHmETAU';
-  const qrCodePath = '/qr/WhatsApp Image 2026-01-13 at 23.51.34.jpeg';
+
+  // Load LIVE PayPal SDK
+  useEffect(() => {
+    // Use environment variable or your live client ID
+    const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AXq3-6fwI858rZdCNe6fpbn8uITDoFzL5ZCeCb8zYJLsUz0i0yjHNKmtoqhGp21DMHt9UH721FiV7L0M';
+    
+    console.log('Loading LIVE PayPal with Client ID:', clientId ? 'Set' : 'Missing');
+    
+    // Remove any existing PayPal script
+    const existingScript = document.querySelector('script[src*="paypal.com/sdk/js"]');
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&intent=capture&disable-funding=venmo,card`;
+    script.async = true;
+    
+    script.onload = () => {
+      console.log('✅ LIVE PayPal SDK loaded successfully');
+      setIsPayPalScriptLoaded(true);
+    };
+    
+    script.onerror = (err) => {
+      console.error('❌ Failed to load LIVE PayPal SDK:', err);
+      setError('Failed to load payment system. Please refresh the page or contact support.');
+    };
+    
+    document.head.appendChild(script);
+
+    return () => {
+      // Keep script loaded
+    };
+  }, []);
 
   useEffect(() => {
-    console.log('Checkout useEffect triggered');
-    console.log('User:', user);
-    console.log('Plan from URL:', plan);
-    console.log('Current Plan:', currentPlan);
-    
     if (!user) {
-      console.log('No user, redirecting to auth');
       navigate('/auth');
       return;
     }
 
     if (!currentPlan) {
-      console.log('No valid plan, redirecting to pricing');
       navigate('/pricing');
       return;
     }
+  }, [user, currentPlan, navigate]);
 
-    // Convert USD to approximate USDT (1:1 for simplicity)
-    setUsdtAmount(currentPlan.price);
-  }, [user, currentPlan, navigate, plan]);
+  const createPayPalOrder = async () => {
+    if (!user || !currentPlan) return null;
 
-  const handleCopyAddress = () => {
-    navigator.clipboard.writeText(tronAddress);
-    setCopied(true);
-    toast({
-      title: 'Address copied!',
-      description: 'Tron address copied to clipboard.',
-    });
-    
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      console.log('Creating LIVE PayPal order for:', currentPlan.tier);
+      
+      const { data, error } = await supabase.functions.invoke('create-paypal-order', {
+        body: {
+          tier: currentPlan.tier,
+          userId: user.id,
+          userEmail: user.email
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to create payment order');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create payment order');
+      }
+
+      console.log('LIVE PayPal order created:', data.orderId);
+      setPaypalOrderId(data.orderId);
+      return data.orderId;
+    } catch (error: any) {
+      console.error('Error creating PayPal order:', error);
+      throw error;
+    }
   };
 
-  const handlePayNow = async () => {
-    console.log('Pay Now clicked');
-    console.log('User:', user);
-    console.log('Current Plan:', currentPlan);
-    
-    if (!user || !currentPlan) {
-      console.error('Missing user or current plan');
+  const initializePayPalButtons = () => {
+    if (!window.paypal || !isPayPalScriptLoaded || !currentPlan) {
+      console.log('PayPal SDK not ready');
       return;
     }
 
-    setIsProcessing(true);
-    setError(null);
+    const container = document.getElementById('paypal-button-container');
+    if (container) {
+      container.innerHTML = '';
+    }
 
     try {
-      console.log('Setting payment initiated to true');
-      setPaymentInitiated(true);
+      window.paypal.Buttons({
+        style: {
+          shape: 'rect',
+          color: 'gold',
+          layout: 'vertical',
+          label: 'paypal',
+          height: 55,
+          tagline: false
+        },
+        
+        createOrder: async (data: any, actions: any) => {
+          console.log('LIVE PayPal createOrder triggered');
+          setIsProcessing(true);
+          setError(null);
+          
+          try {
+            const orderId = await createPayPalOrder();
+            setIsProcessing(false);
+            return orderId;
+          } catch (error: any) {
+            setIsProcessing(false);
+            setError(error.message || 'Failed to create payment order.');
+            throw error;
+          }
+        },
+        
+        onApprove: async (data: any, actions: any) => {
+          console.log('✅ LIVE PayPal payment approved:', data.orderID);
+          setIsProcessing(true);
+          
+          try {
+            // Capture payment
+            const { data: captureData, error: captureError } = await supabase.functions.invoke('capture-paypal-order', {
+              body: { orderId: data.orderID }
+            });
 
-      // Create transaction record
-      try {
-        console.log('Creating transaction record...');
-        const { error: transactionError } = await supabase
-          .from('transactions')
-          .insert({
-            user_id: user.id,
-            type: 'subscription',
-            amount: -currentPlan.price,
-            status: 'pending',
-            description: `${currentPlan.name} Membership - USDT Payment Pending`,
-            reference_id: `usdt_${Date.now()}_${user.id}`
+            if (captureError || !captureData?.success) {
+              console.warn('Capture may have failed, redirecting for verification');
+              // Still redirect for verification
+              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}`;
+              return;
+            }
+
+            // Success - refresh and redirect
+            await refreshProfile();
+            
+            toast({
+              title: 'Payment Successful!',
+              description: `Your ${currentPlan.name} membership has been activated.`,
+              variant: 'default',
+            });
+            
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 2000);
+            
+          } catch (error: any) {
+            console.error('Payment processing error:', error);
+            
+            // Redirect to verification page as fallback
+            toast({
+              title: 'Verifying Payment',
+              description: 'Redirecting for payment verification...',
+            });
+            
+            setTimeout(() => {
+              window.location.href = `https://skillbridgefreelance.netlify.app/payment-success?order_id=${data.orderID}&user_id=${user?.id}`;
+            }, 1000);
+            
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        
+        onError: (err: any) => {
+          console.error('❌ LIVE PayPal error:', err);
+          setIsProcessing(false);
+          setError('Payment failed. Please try again or use a different payment method.');
+        },
+        
+        onCancel: (data: any) => {
+          console.log('LIVE PayPal payment cancelled');
+          setIsProcessing(false);
+          toast({
+            title: 'Payment Cancelled',
+            description: 'You cancelled the payment process.',
+            variant: 'destructive',
           });
-
-        if (transactionError) {
-          console.warn('Transaction record not created:', transactionError);
-        } else {
-          console.log('Transaction record created');
         }
-      } catch (dbError) {
-        console.warn('Database operation failed:', dbError);
-      }
-
-      // Update profile
-      try {
-        console.log('Updating profile...');
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
-
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            membership_tier: currentPlan.tier,
-            membership_expires_at: expiresAt.toISOString(),
-            daily_tasks_used: 0,
-            membership_status: 'pending_payment'
-          })
-          .eq('id', user.id);
-
-        if (updateError) {
-          console.warn('Profile update failed:', updateError);
-        } else {
-          console.log('Profile updated');
-        }
-
-        await refreshProfile();
-      } catch (profileError) {
-        console.warn('Profile update failed:', profileError);
-      }
-
-      toast({
-        title: 'Payment Instructions',
-        description: 'Please send USDT to the address shown. Your membership will be activated after verification.',
-      });
-
-      console.log('Setting timeout for dashboard redirect');
-      // Redirect to dashboard after delay
-      setTimeout(() => {
-        console.log('Redirecting to dashboard');
-        navigate('/dashboard');
-      }, 10000);
-
-    } catch (error: any) {
-      console.error('Payment initiation error:', error);
-      setError('There was an issue setting up your payment. Please try again or contact support.');
-    } finally {
-      setIsProcessing(false);
+        
+      }).render('#paypal-button-container');
+      
+      console.log('✅ LIVE PayPal buttons initialized');
+      
+    } catch (error) {
+      console.error('Error initializing PayPal buttons:', error);
+      setError('Payment system error. Please try the manual option below.');
     }
   };
 
-  const handleManualVerify = () => {
-    console.log('Manual verify clicked');
-    setPaymentInitiated(false);
-    toast({
-      title: 'Returning to payment',
-      description: 'Please complete the USDT transfer as shown.',
-    });
+  const handleDirectPayPal = () => {
+    if (!user || !currentPlan) return;
+    
+    setIsProcessing(true);
+    
+    createPayPalOrder()
+      .then(orderId => {
+        if (orderId) {
+          // Direct PayPal checkout URL (LIVE)
+          const paypalCheckoutUrl = `https://www.paypal.com/checkoutnow?token=${orderId}`;
+          window.open(paypalCheckoutUrl, '_blank', 'noopener,noreferrer');
+          
+          toast({
+            title: 'PayPal Checkout Opened',
+            description: 'Complete your payment in the PayPal window.',
+          });
+        }
+      })
+      .catch(error => {
+        setError(error.message);
+      })
+      .finally(() => {
+        setIsProcessing(false);
+      });
   };
 
-  console.log('Rendering checkout, currentPlan:', currentPlan);
-  
+  useEffect(() => {
+    if (isPayPalScriptLoaded && currentPlan) {
+      initializePayPalButtons();
+    }
+  }, [currentPlan, isPayPalScriptLoaded]);
+
   if (!currentPlan) {
-    console.log('Returning null because no current plan');
     return null;
   }
 
@@ -182,9 +274,13 @@ const Checkout = () => {
             <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
               <Shield className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Complete Your Purchase</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              {currentPlan.tier === 'test' ? 'Test Payment' : 'Complete Your Purchase'}
+            </h1>
             <p className="text-muted-foreground">
-              Upgrade to {currentPlan.name} membership
+              {currentPlan.tier === 'test' 
+                ? 'Test the payment system with $1' 
+                : `Upgrade to ${currentPlan.name} membership`}
             </p>
           </div>
 
@@ -201,129 +297,64 @@ const Checkout = () => {
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                <span>Billed monthly</span>
+                <span>Live PayPal Payment</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-primary" />
-                <span>Guaranteed payments after verification</span>
+                <span>Automatic activation after payment</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-primary" />
-                <span>Fast submission verification after job completion</span>
-              </div>
+              {currentPlan.tier === 'test' && (
+                <div className="flex items-center gap-2 text-yellow-500">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Test payment only - $1</span>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Payment Details</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Live Payment</h2>
             
             <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                 <div className="flex items-start gap-3">
-                  <Lock className="w-5 h-5 text-purple-400 mt-0.5" />
+                  <Lock className="w-5 h-5 text-green-500 mt-0.5" />
                   <div>
-                    <p className="text-sm text-purple-400 font-medium mb-1">USDT via Tron Network (TRC20)</p>
+                    <p className="text-sm text-green-500 font-medium mb-1">Live PayPal Payment</p>
                     <p className="text-sm text-foreground">
-                      Send USDT (TRC20) to the address below. Make sure to use the Tron Network.
+                      This is a <strong>real payment</strong>. Click below to pay ${currentPlan.price} via PayPal.
                     </p>
+                    {currentPlan.tier === 'test' && (
+                      <p className="text-sm text-yellow-500 mt-1">
+                        ⚠️ Test with $1 first to verify the system works.
+                      </p>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              {/* QR Code Display */}
-              <div className="glass-card p-6 text-center">
-                <div className="flex flex-col items-center justify-center mb-4">
-                  <QrCode className="w-8 h-8 text-primary mb-2" />
-                  <h3 className="font-semibold text-foreground">Scan QR Code</h3>
-                  <p className="text-sm text-muted-foreground mt-1">Scan with your crypto wallet app</p>
-                </div>
-                <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                  <img 
-                    src={qrCodePath} 
-                    alt="Tron Address QR Code" 
-                    className="w-48 h-48 object-contain"
-                    onError={(e) => {
-                      console.error('QR code image failed to load:', qrCodePath);
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">If QR doesn't load, copy the address manually below</p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="glass-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">Tron Address (TRC20):</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCopyAddress}
-                      className="h-7 w-7 p-0"
-                    >
-                      {copied ? (
-                        <Check className="w-3 h-3 text-green-400" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </Button>
-                  </div>
-                  <div className="bg-primary/5 px-3 py-2 rounded-lg overflow-x-auto">
-                    <code className="text-sm md:text-base font-bold text-primary break-all">
-                      {tronAddress}
-                    </code>
-                  </div>
-                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                    <Check className="w-3 h-3" />
-                    Copy this address to send USDT
-                  </p>
-                </div>
-
-                <div className="glass-card p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">Amount to Send:</span>
-                    <CreditCard className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-foreground">{usdtAmount} USDT</span>
-                    <span className="text-sm text-muted-foreground">≈ ${currentPlan.price}.00</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">Monthly subscription (TRC20 only)</p>
                 </div>
               </div>
 
               <div className="glass-card p-4">
-                <h3 className="font-medium text-foreground mb-3">Important Instructions:</h3>
-                <ol className="space-y-2 text-sm text-muted-foreground pl-5 list-decimal">
-                  <li><strong>Send exactly {usdtAmount} USDT</strong> (TRC20 token on Tron Network)</li>
-                  <li><strong>Use only the Tron Network (TRC20)</strong> - Do NOT use ERC20 or other networks</li>
-                  <li>Send from exchanges like Binance, OKX, Bybit, or any TRON-compatible wallet</li>
-                  <li>Copy the address above or scan the QR code with your wallet</li>
-                  <li>After sending, your membership will be activated within 24 hours</li>
-                  <li>Keep your transaction hash (TXID) for reference</li>
-                  <li>Contact support if you encounter any issues</li>
-                </ol>
-              </div>
-
-              <div className="p-4 rounded-lg bg-blue-400/10 border border-blue-400/20">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-blue-400 font-medium mb-1">Where to Get USDT (TRC20)?</p>
-                    <p className="text-sm text-foreground">
-                      You can buy and send USDT on Binance, OKX, Bybit, or other major exchanges. 
-                      Make sure to select <strong>Tron Network (TRC20)</strong> when withdrawing.
-                    </p>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">Amount:</span>
+                  <CreditCard className="w-4 h-4 text-primary" />
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-foreground">${currentPlan.price}.00</span>
+                  <span className="text-sm text-muted-foreground">USD - Real Payment</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {currentPlan.tier === 'test' 
+                    ? 'Test payment to verify system' 
+                    : 'Monthly subscription - Live payment'}
+                </p>
               </div>
 
               {error && (
-                <div className="p-4 rounded-lg bg-yellow-400/10 border border-yellow-400/20">
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
                     <div>
-                      <p className="text-sm text-yellow-400 font-medium mb-1">Note</p>
+                      <p className="text-sm text-red-500 font-medium mb-1">Error</p>
                       <p className="text-sm text-foreground">{error}</p>
                     </div>
                   </div>
@@ -332,52 +363,35 @@ const Checkout = () => {
             </div>
           </div>
 
-          {paymentInitiated ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full bg-green-400/10 border border-green-400/20 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-green-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Payment Address Ready</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Please send <strong>{usdtAmount} USDT (TRC20)</strong> to the address shown above.
-                Your membership will be activated within 24 hours after verification.
-              </p>
-              
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
-                <AlertCircle className="w-4 h-4" />
-                <span>Returning to dashboard in 10 seconds...</span>
-              </div>
-              
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-3">Need to see the address again?</p>
-                <Button
-                  onClick={handleManualVerify}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Show Payment Details Again
-                </Button>
-              </div>
-            </div>
-          ) : isProcessing ? (
+          {isProcessing ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-              <span className="text-muted-foreground mb-2">Setting up payment...</span>
+              <span className="text-muted-foreground mb-2">Processing payment...</span>
               <span className="text-xs text-muted-foreground">Please wait</span>
             </div>
           ) : (
             <div className="space-y-4">
-              <Button
-                onClick={handlePayNow}
-                className="w-full h-14 text-lg font-semibold group"
-                variant="hero"
-                disabled={isProcessing}
-              >
-                <CreditCard className="w-5 h-5 mr-2" />
-                Confirm and Show Payment Details
-                <CheckCircle className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
-              </Button>
+              {/* PayPal Button Container */}
+              <div id="paypal-button-container" className="min-h-[55px]">
+                {!isPayPalScriptLoaded && (
+                  <div className="text-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading PayPal...</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center">
+                <Button
+                  onClick={handleDirectPayPal}
+                  variant="outline"
+                  className="w-full"
+                  disabled={isProcessing}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open PayPal in New Window
+                </Button>
+              </div>
               
               <div className="text-center">
                 <Button
@@ -385,7 +399,7 @@ const Checkout = () => {
                   variant="ghost"
                   size="sm"
                 >
-                  Cancel and return to pricing
+                  Cancel
                 </Button>
               </div>
             </div>
@@ -394,10 +408,14 @@ const Checkout = () => {
           <div className="text-center text-sm text-muted-foreground mt-8 pt-6 border-t border-border">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Lock className="w-4 h-4" />
-              <p>Secure payment via Tron Network (TRC20)</p>
+              <p>Secure live payment via PayPal</p>
             </div>
-            <p className="text-xs mb-2">Only send USDT on Tron Network. Other tokens will be lost.</p>
-            <p>Need help? Contact freelance.skillbridge.com</p>
+            <p className="text-xs">You will be redirected for automatic verification after payment</p>
+            {currentPlan.tier === 'test' && (
+              <p className="text-xs text-yellow-500 mt-1">
+                ⚠️ This is a test payment. Use $1 to verify the system works.
+              </p>
+            )}
           </div>
         </div>
       </div>
