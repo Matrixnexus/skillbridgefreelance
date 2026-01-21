@@ -32,10 +32,10 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Linkedin, href: "#", label: "LinkedIn" },
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Instagram, href: "#", label: "Instagram" },
+    { icon: Twitter, label: "Twitter" },
+    { icon: Linkedin, label: "LinkedIn" },
+    { icon: Facebook, label: "Facebook" },
+    { icon: Instagram, label: "Instagram" },
   ];
 
   // Function to determine if link should be anchor or router link
@@ -138,16 +138,14 @@ const Footer = () => {
           
           <div className="flex items-center gap-4">
             {socialLinks.map((social) => (
-              <a
+              <div
                 key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground cursor-default"
                 aria-label={social.label}
+                title={social.label}
               >
                 <social.icon className="w-5 h-5" />
-              </a>
+              </div>
             ))}
           </div>
         </div>
