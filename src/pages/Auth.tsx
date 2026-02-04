@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,8 @@ import {
   EyeOff, 
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  Gift,
 } from 'lucide-react';
 import {
   Dialog,
@@ -47,6 +48,7 @@ const signUpSchema = z.object({
 });
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -62,9 +64,19 @@ const Auth = () => {
   const [verificationSent, setVerificationSent] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   
   const { user, isLoading: authLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+
+  // Check for referral code in URL
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setReferralCode(ref);
+      setIsSignUp(true); // Switch to signup if coming from referral link
+    }
+  }, [searchParams]);
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -113,7 +125,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await signUp(formData.email, formData.password, formData.fullName);
+        const { error } = await signUp(formData.email, formData.password, formData.fullName, referralCode);
         if (error) {
           if (error.message.includes('already registered')) {
             setApiError('This email is already registered. Please sign in instead.');
@@ -234,6 +246,21 @@ const Auth = () => {
                 : 'Sign in to access your dashboard'}
             </p>
           </div>
+
+          {/* Referral Code Banner */}
+          {referralCode && isSignUp && (
+            <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="flex items-center gap-3">
+                <Gift className="w-5 h-5 text-primary flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">You've been referred!</p>
+                  <p className="text-sm text-muted-foreground">
+                    Sign up now and when you upgrade to a premium plan, your referrer will earn a bonus!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Verification Success Message */}
           {verificationSent && (

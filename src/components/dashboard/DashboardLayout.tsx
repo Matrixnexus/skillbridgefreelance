@@ -8,14 +8,14 @@ import {
   FileText,
   Wallet,
   Settings,
-  Bell,
   LogOut,
   Menu,
   X,
   Crown,
-  ChevronDown,
   User,
   Shield,
+  Gift,
+  Download,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,6 +45,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Available Jobs', href: '/jobs', icon: Briefcase },
     { name: 'My Submissions', href: '/submissions', icon: FileText },
     { name: 'Earnings', href: '/earnings', icon: Wallet },
+    { name: 'Referrals', href: '/referrals', icon: Gift },
+    { name: 'Withdrawals', href: '/withdrawals', icon: Download },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
