@@ -61,6 +61,7 @@ interface Job {
   is_active: boolean;
   current_submissions: number;
   category: { name: string } | null;
+  category_id?: string | null;
   job_file_url: string | null;
   job_file_name: string | null;
   job_file_type: string | null;
