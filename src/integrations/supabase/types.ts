@@ -45,6 +45,11 @@ export type Database = {
         Row: {
           admin_feedback: string | null
           created_at: string
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          google_drive_file_id: string | null
           id: string
           job_id: string
           payment_amount: number
@@ -55,10 +60,17 @@ export type Database = {
           submission_url: string | null
           updated_at: string
           user_id: string
+          worker_file_name: string | null
+          worker_file_url: string | null
         }
         Insert: {
           admin_feedback?: string | null
           created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          google_drive_file_id?: string | null
           id?: string
           job_id: string
           payment_amount: number
@@ -69,10 +81,17 @@ export type Database = {
           submission_url?: string | null
           updated_at?: string
           user_id: string
+          worker_file_name?: string | null
+          worker_file_url?: string | null
         }
         Update: {
           admin_feedback?: string | null
           created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          google_drive_file_id?: string | null
           id?: string
           job_id?: string
           payment_amount?: number
@@ -83,6 +102,8 @@ export type Database = {
           submission_url?: string | null
           updated_at?: string
           user_id?: string
+          worker_file_name?: string | null
+          worker_file_url?: string | null
         }
         Relationships: [
           {
@@ -106,6 +127,9 @@ export type Database = {
           id: string
           instructions: string
           is_active: boolean
+          job_file_name: string | null
+          job_file_type: string | null
+          job_file_url: string | null
           max_submissions: number | null
           payment_amount: number
           required_tier: Database["public"]["Enums"]["membership_tier"]
@@ -124,6 +148,9 @@ export type Database = {
           id?: string
           instructions: string
           is_active?: boolean
+          job_file_name?: string | null
+          job_file_type?: string | null
+          job_file_url?: string | null
           max_submissions?: number | null
           payment_amount: number
           required_tier?: Database["public"]["Enums"]["membership_tier"]
@@ -142,6 +169,9 @@ export type Database = {
           id?: string
           instructions?: string
           is_active?: boolean
+          job_file_name?: string | null
+          job_file_type?: string | null
+          job_file_url?: string | null
           max_submissions?: number | null
           payment_amount?: number
           required_tier?: Database["public"]["Enums"]["membership_tier"]
@@ -185,6 +215,81 @@ export type Database = {
           message?: string
           title?: string
           type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          paypal_order_id: string | null
+          plan: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          paypal_order_id?: string | null
+          plan: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          paypal_order_id?: string | null
+          plan?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      paypal_orders: {
+        Row: {
+          amount: number
+          capture_data: Json | null
+          captured_at: string | null
+          created_at: string
+          custom_id: string | null
+          id: string
+          order_id: string
+          status: string
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          capture_data?: Json | null
+          captured_at?: string | null
+          created_at?: string
+          custom_id?: string | null
+          id?: string
+          order_id: string
+          status: string
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          capture_data?: Json | null
+          captured_at?: string | null
+          created_at?: string
+          custom_id?: string | null
+          id?: string
+          order_id?: string
+          status?: string
+          tier?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -243,6 +348,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          paypal_order_id: string | null
+          paypal_payer_id: string | null
+          plan: string
+          plan_name: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          paypal_order_id?: string | null
+          paypal_payer_id?: string | null
+          plan: string
+          plan_name: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          paypal_order_id?: string | null
+          paypal_payer_id?: string | null
+          plan?: string
+          plan_name?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -296,7 +440,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_submissions_view: {
+        Row: {
+          created_at: string | null
+          display_file_name: string | null
+          display_file_url: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string | null
+          job_id: string | null
+          job_title: string | null
+          payment_amount: number | null
+          status: Database["public"]["Enums"]["submission_status"] | null
+          submission_content: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+          worker_file_name: string | null
+          worker_file_url: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_submissions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
