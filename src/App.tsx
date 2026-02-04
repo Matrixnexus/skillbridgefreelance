@@ -16,8 +16,10 @@ import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
 import Admin from "./pages/Admin";
-import TermsOfService from "./pages/TermsOfService"; // ADD THIS
-import PrivacyPolicy from "./pages/PrivacyPolicy";   // ADD THIS
+import Referrals from "./pages/Referrals";
+import Withdrawals from "./pages/Withdrawals";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 // Configure QueryClient with better defaults
@@ -48,16 +50,14 @@ const App = () => (
             <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/submissions" element={<Submissions />} />
             <Route path="/earnings" element={<Earnings />} />
+            <Route path="/referrals" element={<Referrals />} />
+            <Route path="/withdrawals" element={<Withdrawals />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/admin" element={<Admin />} />
-            
-            {/* ADD THESE NEW ROUTES */}
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

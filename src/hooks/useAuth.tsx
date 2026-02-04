@@ -16,6 +16,10 @@ interface Profile {
   approved_earnings: number;
   tasks_completed: number;
   rating: number | null;
+  referral_code: string | null;
+  referred_by: string | null;
+  referral_earnings: number;
+  task_earnings: number;
   created_at: string;
   updated_at: string;
 }
@@ -27,7 +31,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, referralCode?: string | null) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -246,7 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, referralCode?: string | null) => {
     try {
       setIsLoading(true);
       
@@ -258,13 +262,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
         options: {
           emailRedirectTo: redirectUrl,
-          data: { full_name: fullName },
+          data: { 
+            full_name: fullName,
+            referral_code: referralCode || null,
+          },
         },
       });
       
       if (error) {
         setIsLoading(false);
         return { error };
+      }
+
+      // If referral code is provided, store the referral relationship
+      if (referralCode && data.user) {
+        try {
+          // Find the referrer by their referral code
+          const { data: referrer } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('referral_code', referralCode)
+            .single();
+
+          if (referrer) {
+            // Update the new user's profile with referred_by
+            await supabase
+              .from('profiles')
+              .update({ referred_by: referrer.id })
+              .eq('id', data.user.id);
+
+            // Create a referral record
+            await supabase
+              .from('referrals')
+              .insert({
+                referrer_id: referrer.id,
+                referred_id: data.user.id,
+                status: 'pending',
+              });
+          }
+        } catch (refError) {
+          console.warn('Error processing referral:', refError);
+          // Don't fail the signup if referral processing fails
+        }
       }
       
       // Don't automatically sign in - wait for email confirmation

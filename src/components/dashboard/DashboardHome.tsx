@@ -13,6 +13,8 @@ import {
   Crown,
   AlertCircle,
   Zap,
+  Gift,
+  Users,
 } from 'lucide-react';
 
 interface Job {
@@ -133,27 +135,27 @@ const DashboardHome = () => {
     return 0;
   };
 
-  // Updated stats to show from profiles table
+  // Updated stats to show dual balances
   const stats = [
     {
-      name: 'Total Earnings',
-      value: `$${(profile?.total_earnings || 0).toFixed(2)}`, // FROM PROFILES
-      icon: DollarSign,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-      description: 'All earnings including bonuses',
-    },
-    {
-      name: 'Approved Earnings',
-      value: `$${(profile?.approved_earnings || 0).toFixed(2)}`, // FROM PROFILES
-      icon: CheckCircle,
+      name: 'Task Balance',
+      value: `$${(profile?.task_earnings || 0).toFixed(2)}`,
+      icon: Briefcase,
       color: 'text-green-400',
       bgColor: 'bg-green-400/10',
-      description: 'Ready for withdrawal',
+      description: 'Min $250 to withdraw',
+    },
+    {
+      name: 'Referral Balance',
+      value: `$${(profile?.referral_earnings || 0).toFixed(2)}`,
+      icon: Users,
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+      description: 'Min $30 to withdraw',
     },
     {
       name: 'Pending Earnings',
-      value: `$${paymentSummary.pending.toFixed(2)}`, // From submissions
+      value: `$${paymentSummary.pending.toFixed(2)}`,
       icon: Clock,
       color: 'text-yellow-400',
       bgColor: 'bg-yellow-400/10',
@@ -162,7 +164,7 @@ const DashboardHome = () => {
     {
       name: 'Tasks Completed',
       value: profile?.tasks_completed || 0,
-      icon: Briefcase,
+      icon: CheckCircle,
       color: 'text-blue-400',
       bgColor: 'bg-blue-400/10',
       description: 'Total approved tasks',
@@ -361,9 +363,15 @@ const DashboardHome = () => {
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/settings">
-                <Zap className="w-4 h-4 mr-3" />
-                Account Settings
+              <Link to="/referrals">
+                <Gift className="w-4 h-4 mr-3" />
+                Referral Program
+              </Link>
+            </Button>
+            <Button variant="outline" className="w-full justify-start" asChild>
+              <Link to="/withdrawals">
+                <DollarSign className="w-4 h-4 mr-3" />
+                Withdrawals
               </Link>
             </Button>
           </div>

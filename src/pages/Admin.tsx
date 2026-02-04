@@ -43,6 +43,7 @@ import {
   Database,
 } from 'lucide-react';
 import { uploadToCloudinary, formatFileSize, downloadFile } from '@/utils/cloudinary';
+import AdminWithdrawalManagement from '@/components/admin/AdminWithdrawalManagement';
 
 interface Category {
   id: string;
@@ -1016,6 +1017,16 @@ const Admin = () => {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('withdrawals')}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === 'withdrawals'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Withdrawals
+            </button>
           </div>
         </div>
 
@@ -1527,6 +1538,10 @@ const Admin = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'withdrawals' && (
+              <AdminWithdrawalManagement />
             )}
           </>
         )}

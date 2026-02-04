@@ -308,6 +308,10 @@ export type Database = {
           membership_tier: Database["public"]["Enums"]["membership_tier"]
           pending_earnings: number
           rating: number | null
+          referral_code: string | null
+          referral_earnings: number | null
+          referred_by: string | null
+          task_earnings: number | null
           tasks_completed: number
           total_earnings: number
           updated_at: string
@@ -325,6 +329,10 @@ export type Database = {
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           pending_earnings?: number
           rating?: number | null
+          referral_code?: string | null
+          referral_earnings?: number | null
+          referred_by?: string | null
+          task_earnings?: number | null
           tasks_completed?: number
           total_earnings?: number
           updated_at?: string
@@ -342,11 +350,74 @@ export type Database = {
           membership_tier?: Database["public"]["Enums"]["membership_tier"]
           pending_earnings?: number
           rating?: number | null
+          referral_code?: string | null
+          referral_earnings?: number | null
+          referred_by?: string | null
+          task_earnings?: number | null
           tasks_completed?: number
           total_earnings?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          bonus_amount: number
+          created_at: string
+          credited_at: string | null
+          id: string
+          referred_id: string
+          referred_tier: Database["public"]["Enums"]["membership_tier"]
+          referrer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_amount?: number
+          created_at?: string
+          credited_at?: string | null
+          id?: string
+          referred_id: string
+          referred_tier?: Database["public"]["Enums"]["membership_tier"]
+          referrer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_amount?: number
+          created_at?: string
+          credited_at?: string | null
+          id?: string
+          referred_id?: string
+          referred_tier?: Database["public"]["Enums"]["membership_tier"]
+          referrer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscriptions: {
         Row: {
@@ -438,6 +509,62 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          balance_type: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          payment_details: Json | null
+          payment_method: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          balance_type: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          payment_details?: Json | null
+          payment_method?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          balance_type?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          payment_details?: Json | null
+          payment_method?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       admin_submissions_view: {
@@ -473,6 +600,7 @@ export type Database = {
       }
     }
     Functions: {
+      generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
