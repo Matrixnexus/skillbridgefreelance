@@ -16,7 +16,7 @@ import {
 
 interface Transaction {
   id: string;
-  type: 'earning' | 'payout' | 'subscription';
+  type: string;
   amount: number;
   description: string | null;
   status: string;
@@ -282,11 +282,14 @@ const Earnings = () => {
     try {
       setIsSubmitting(true);
 
+      // Get the session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/request-withdrawal', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user?.getIdToken()}`
+          'Authorization': `Bearer ${session?.access_token || ''}`
         },
         body: JSON.stringify({
           userId: user?.id,

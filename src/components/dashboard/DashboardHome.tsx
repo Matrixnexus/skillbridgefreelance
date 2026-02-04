@@ -328,7 +328,7 @@ const DashboardHome = () => {
                 style={{ 
                   width: `${getDailyTaskLimit() === 'Unlimited' ? '100%' : 
                     Math.min(100, ((profile?.daily_tasks_used || 0) / 
-                    (typeof getDailyTaskLimit() === 'number' ? getDailyTaskLimit() : 1)) * 100)}%` 
+                    (typeof getDailyTaskLimit() === 'number' ? (getDailyTaskLimit() as number) : 1)) * 100)}%` 
                 }}
               />
             </div>
