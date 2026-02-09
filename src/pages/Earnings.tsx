@@ -282,36 +282,38 @@ const Earnings = () => {
     try {
       setIsSubmitting(true);
 
-      // Get the session token
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch('/api/request-withdrawal', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
-          userId: user?.id,
-          email: user?.email,
+      // Insert withdrawal request directly into Supabase
+      const { error: insertError } = await supabase
+        .from('withdrawal_requests')
+        .insert({
+          user_id: user!.id,
           amount,
-          availableBalance: paymentSummary.availableForWithdrawal
-        }),
-      });
+          balance_type: 'task',
+          payment_method: 'bank_transfer',
+          payment_details: { note: 'Requested from earnings page' },
+          status: 'pending',
+        });
 
-      const result = await response.json();
+      if (insertError) throw insertError;
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Withdrawal request failed');
-      }
+      // Deduct from task_earnings and approved_earnings
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          task_earnings: Math.max(0, (profile?.task_earnings || 0) - amount),
+          approved_earnings: Math.max(0, (profile?.approved_earnings || 0) - amount),
+        })
+        .eq('id', user!.id);
+
+      if (updateError) throw updateError;
 
       setWithdrawSuccess(
-        'Withdrawal request submitted successfully! Your request is under review. You will be notified once processed.'
+        'Withdrawal request submitted successfully! Your request is under review.'
       );
       setWithdrawAmount('');
       
-      // Refresh data to show updated balance
-      setTimeout(() => fetchAllData(), 2000);
+      // Refresh data
+      setTimeout(() => fetchAllData(), 1000);
       
     } catch (error: any) {
       setWithdrawError(
