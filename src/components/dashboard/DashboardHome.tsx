@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Crown,
   AlertCircle,
-  Zap,
   Gift,
   Users,
 } from 'lucide-react';
@@ -60,7 +59,6 @@ const DashboardHome = () => {
 
         if (profileData) {
           setProfile(profileData);
-          console.log('PROFILE DATA FROM DB:', profileData); // Debug log
         }
 
         // Fetch recent jobs
@@ -100,7 +98,7 @@ const DashboardHome = () => {
           });
         }
 
-        console.log('PAYMENT SUMMARY CALCULATED:', summary); // Debug log
+
         setPaymentSummary(summary);
 
       } catch (err) {
@@ -171,15 +169,6 @@ const DashboardHome = () => {
     },
   ];
 
-  // Debug useEffect to monitor data
-  useEffect(() => {
-    console.log('=== DASHBOARD DEBUG ===');
-    console.log('Profile:', profile);
-    console.log('Profile approved_earnings:', profile?.approved_earnings);
-    console.log('Profile total_earnings:', profile?.total_earnings);
-    console.log('Payment Summary:', paymentSummary);
-    console.log('=======================');
-  }, [profile, paymentSummary]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -201,11 +190,6 @@ const DashboardHome = () => {
     return userTierIndex >= requiredTierIndex;
   };
 
-  // Helper to check if earnings are showing correctly
-  const hasBonusEarnings = () => {
-    return (profile?.approved_earnings || 0) >= 10 || (profile?.total_earnings || 0) >= 10;
-  };
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -217,13 +201,6 @@ const DashboardHome = () => {
           <p className="text-muted-foreground mt-1">
             Here's an overview of your freelancing activity
           </p>
-          {/* Debug indicator - remove in production */}
-          {hasBonusEarnings() && (
-            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-400/10 text-green-400 text-sm">
-              <CheckCircle className="w-3 h-3" />
-              Bonus earnings applied
-            </div>
-          )}
         </div>
         <Button variant="hero" asChild>
           <Link to="/jobs">
@@ -281,45 +258,43 @@ const DashboardHome = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">From Profiles Table</span>
-              <span className="font-medium">${(profile?.approved_earnings || 0).toFixed(2)}</span>
-            </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-500" 
-                style={{ width: `${(profile?.approved_earnings || 0) > 0 ? '100%' : '0%'}` }}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">From Submissions</span>
-              <span className="font-medium">${(paymentSummary.pending + paymentSummary.rejected).toFixed(2)}</span>
-            </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-yellow-400 transition-all duration-500" 
-                style={{ width: '50%' }}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Total Available</span>
-              <span className="font-medium text-green-400">
-                ${((profile?.approved_earnings || 0) + paymentSummary.pending).toFixed(2)}
-              </span>
+              <span className="text-sm text-muted-foreground">Approved Earnings</span>
+              <span className="font-medium text-green-400">${(profile?.approved_earnings || 0).toFixed(2)}</span>
             </div>
             <div className="h-2 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-green-400 transition-all duration-500" 
-                style={{ width: '75%' }}
+                style={{ width: `${Math.min(100, ((profile?.approved_earnings || 0) / Math.max(1, profile?.total_earnings || 1)) * 100)}%` }}
               />
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Daily Limit</span>
+              <span className="text-sm text-muted-foreground">Pending Review</span>
+              <span className="font-medium text-yellow-400">${paymentSummary.pending.toFixed(2)}</span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-yellow-400 transition-all duration-500" 
+                style={{ width: `${Math.min(100, (paymentSummary.pending / Math.max(1, (profile?.total_earnings || 0) + paymentSummary.pending)) * 100)}%` }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Total Earnings</span>
+              <span className="font-medium">${(profile?.total_earnings || 0).toFixed(2)}</span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500" 
+                style={{ width: '100%' }}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Daily Tasks</span>
               <span className="font-medium">
                 {profile?.daily_tasks_used || 0} / {getDailyTaskLimit()}
               </span>
@@ -433,30 +408,6 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Debug Panel - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="glass-card p-6 bg-yellow-400/5 border border-yellow-400/20">
-          <h3 className="font-semibold text-yellow-400 mb-2">Debug Information</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">User ID:</p>
-              <code className="text-xs break-all">{user?.id}</code>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Profile Approved Earnings:</p>
-              <p className="font-mono">${profile?.approved_earnings || 0}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Profile Total Earnings:</p>
-              <p className="font-mono">${profile?.total_earnings || 0}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Database Source:</p>
-              <p className="text-green-400">profiles table</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -608,6 +608,27 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_referral_code: { Args: { p_code: string }; Returns: string }
+      process_withdrawal_safely: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: {
+          message: string
+          new_approved_balance: number
+          success: boolean
+        }[]
+      }
+      update_submission_earnings_atomically: {
+        Args: {
+          p_new_status: Database["public"]["Enums"]["submission_status"]
+          p_payment_amount: number
+          p_submission_id: string
+        }
+        Returns: {
+          message: string
+          success: boolean
+          updated_total_earnings: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "freelancer"
