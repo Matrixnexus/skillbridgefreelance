@@ -274,34 +274,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { error };
       }
 
-      // If referral code is provided, store the referral relationship
-      if (referralCode && data.user) {
-        try {
-          // Use secure RPC function to look up referrer (bypasses RLS)
-          const { data: referrerId } = await supabase
-            .rpc('lookup_referral_code', { p_code: referralCode });
-
-          if (referrerId) {
-            // Update the new user's profile with referred_by
-            await supabase
-              .from('profiles')
-              .update({ referred_by: referrerId })
-              .eq('id', data.user.id);
-
-            // Create a referral record
-            await supabase
-              .from('referrals')
-              .insert({
-                referrer_id: referrerId,
-                referred_id: data.user.id,
-                status: 'pending',
-              });
-          }
-        } catch (refError) {
-          console.warn('Error processing referral:', refError);
-          // Don't fail the signup if referral processing fails
-        }
-      }
+      // Referral processing is now handled server-side in the handle_new_user trigger
+      // The referral_code is passed via user metadata and processed automatically
       
       // Don't automatically sign in - wait for email confirmation
       setIsLoading(false);
