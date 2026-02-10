@@ -6,7 +6,7 @@ const TestimonialsSection = () => {
       name: "Wanjiku Mwangi",
       role: "Content Writer",
       membership: "Pro Member",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
+      image: "https://res.cloudinary.com/div5p29ly/image/upload/v1770723716/Afro_Kenyan_Girl_fjzzml.jpg?w=150&h=150&fit=crop&crop=face",
       content:
         "SkillBridge completely transformed my freelance career from Nairobi. The curated jobs mean I spend less time searching and more time earning. Made $2,200 in my first month! Bearing in mind it was a part-time job, before I declared it full-time",
       rating: 5,
@@ -16,7 +16,7 @@ const TestimonialsSection = () => {
       name: "Justin Kamau",
       role: "Data Analyst",
       membership: "VIP Member",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      image: "https://res.cloudinary.com/div5p29ly/image/upload/v1770723716/download_xtznhf.jpg?w=150&h=150&fit=crop&crop=face",
       content:
         "From Mombasa to the world! Unlike other platforms, there's no racing to the bottom on price. Clients here value quality, and the guaranteed payments give me peace of mind while working remotely.",
       rating: 5,
@@ -26,7 +26,7 @@ const TestimonialsSection = () => {
       name: "Amina Hassan",
       role: "Virtual Assistant",
       membership: "Pro Member",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+      image: "https://res.cloudinary.com/div5p29ly/image/upload/v1770723716/___%EF%B8%8F_0707_007_022____._.__ukofrl.jpg?w=150&h=150&fit=crop&crop=face",
       content:
         "Working from Kisumu has never been more rewarding. The membership model actually works in our favor. Higher barrier to entry means better clients and consistent work. Best decision I've made for my career.",
       rating: 5,
@@ -36,7 +36,7 @@ const TestimonialsSection = () => {
       name: "Brian Kiprop",
       role: "Graphic Designer",
       membership: "VIP Member",
-      image: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&h=150&fit=crop&crop=face",
+      image: "https://res.cloudinary.com/div5p29ly/image/upload/v1770723716/African_black_men_lnofxr.jpg?w=150&h=150&fit=crop&crop=face",
       content:
         "Priority review and unlimited tasks as a VIP member means I can scale my income without limits from Nakuru. The platform really invests in serious freelancers across Africa.",
       rating: 5,
@@ -46,7 +46,7 @@ const TestimonialsSection = () => {
       name: "Grace Akinyi",
       role: "Digital Marketer",
       membership: "Pro Member",
-      image: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face",
+      image: "https://res.cloudinary.com/div5p29ly/image/upload/v1770723779/Vibes_2_0__________________________________nikon_newyork_nairobikenya_nairobi_nigeria_nikonphotography_kenyafashion_kampala_kenya_goodvibes_gainwithcarlz_gainwiththeepluto_gainwithxtiandela_ghana_cano_gzqhwp.jpg?w=150&h=150&fit=crop&crop=face",
       content:
         "As a freelancer in Eldoret, SkillBridge connected me with international clients who value my work. The platform's escrow system ensures I always get paid on time.",
       rating: 5,
@@ -56,7 +56,7 @@ const TestimonialsSection = () => {
       name: "James Mutiso",
       role: "Web Developer",
       membership: "VIP Member",
-      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
+      image: "https://res.cloudinary.com/div5p29ly/image/upload/v1770723716/download_1_y7vfrt.jpg?w=150&h=150&fit=crop&crop=face",
       content:
         "From Thika to global markets! The quality of jobs here is exceptional. I've built long-term relationships with clients who appreciate Kenyan talent and professionalism.",
       rating: 5,
