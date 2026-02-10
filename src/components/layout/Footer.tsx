@@ -86,10 +86,6 @@ const Footer = () => {
                 <Mail className="w-4 h-4" />
                 <span className="text-sm">freelance.skillbridge@gmail.com</span>
               </div>
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm">Bristol, UK</span>
-              </div>
             </div>
           </div>
 
