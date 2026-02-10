@@ -3,44 +3,64 @@ import { Star, Quote } from "lucide-react";
 const TestimonialsSection = () => {
   const testimonials = [
     {
-      name: "Sarah Mitchell",
+      name: "Wanjiku Mwangi",
       role: "Content Writer",
       membership: "Pro Member",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
       content:
-        "SkillBridge completely transformed my freelance career. The curated jobs mean I spend less time searching and more time earning. Made $2,200 in my first month! Bearing in mind it was a part-time job, before i declared it full-time",
+        "SkillBridge completely transformed my freelance career from Nairobi. The curated jobs mean I spend less time searching and more time earning. Made $2,200 in my first month! Bearing in mind it was a part-time job, before I declared it full-time",
       rating: 5,
       earnings: "$12,400",
     },
     {
-      name: "Marcus Chen",
+      name: "Justin Kamau",
       role: "Data Analyst",
       membership: "VIP Member",
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
       content:
-        "Unlike other platforms, there's no racing to the bottom on price. Clients here value quality, and the guaranteed payments give me peace of mind.",
+        "From Mombasa to the world! Unlike other platforms, there's no racing to the bottom on price. Clients here value quality, and the guaranteed payments give me peace of mind while working remotely.",
       rating: 5,
       earnings: "$28,750",
     },
     {
-      name: "Emily Rodriguez",
+      name: "Amina Hassan",
       role: "Virtual Assistant",
       membership: "Pro Member",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
       content:
-        "The membership model actually works in our favor. Higher barrier to entry means better clients and consistent work. Best decision I've made.",
+        "Working from Kisumu has never been more rewarding. The membership model actually works in our favor. Higher barrier to entry means better clients and consistent work. Best decision I've made for my career.",
       rating: 5,
       earnings: "$8,900",
     },
     {
-      name: "David Kim",
+      name: "Brian Kiprop",
       role: "Graphic Designer",
       membership: "VIP Member",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+      image: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=150&h=150&fit=crop&crop=face",
       content:
-        "Priority review and unlimited tasks as a VIP member means I can scale my income without limits. The platform really invests in serious freelancers.",
+        "Priority review and unlimited tasks as a VIP member means I can scale my income without limits from Nakuru. The platform really invests in serious freelancers across Africa.",
       rating: 5,
       earnings: "$45,200",
+    },
+    {
+      name: "Grace Akinyi",
+      role: "Digital Marketer",
+      membership: "Pro Member",
+      image: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face",
+      content:
+        "As a freelancer in Eldoret, SkillBridge connected me with international clients who value my work. The platform's escrow system ensures I always get paid on time.",
+      rating: 5,
+      earnings: "$15,600",
+    },
+    {
+      name: "James Mutiso",
+      role: "Web Developer",
+      membership: "VIP Member",
+      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
+      content:
+        "From Thika to global markets! The quality of jobs here is exceptional. I've built long-term relationships with clients who appreciate Kenyan talent and professionalism.",
+      rating: 5,
+      earnings: "$32,800",
     },
   ];
 
@@ -53,19 +73,19 @@ const TestimonialsSection = () => {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-            <span className="text-sm text-primary font-medium">Success Stories</span>
+            <span className="text-sm text-primary font-medium">Kenyan Success Stories</span>
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
             Trusted by{" "}
-            <span className="gradient-text">Thousands of Professionals</span>
+            <span className="gradient-text">Professionals Across Kenya</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            See how freelancers like you are building sustainable careers on SkillBridge
+            See how freelancers from Nairobi to Mombasa are building sustainable careers on SkillBridge
           </p>
         </div>
 
         {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
@@ -108,6 +128,16 @@ const TestimonialsSection = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Kenyan flag accent */}
+        <div className="mt-16 flex justify-center items-center gap-4">
+          <div className="w-8 h-1 bg-black"></div>
+          <div className="w-8 h-1 bg-red-600"></div>
+          <div className="w-8 h-1 bg-green-600"></div>
+          <div className="text-sm text-muted-foreground ml-4">
+            Proudly serving Kenyan talent 🇰🇪
+          </div>
         </div>
       </div>
     </section>
