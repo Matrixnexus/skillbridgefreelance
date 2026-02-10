@@ -64,19 +64,10 @@ const Auth = () => {
   const [verificationSent, setVerificationSent] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
-  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState('');
   
   const { user, isLoading: authLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
-
-  // Check for referral code in URL
-  useEffect(() => {
-    const ref = searchParams.get('ref');
-    if (ref) {
-      setReferralCode(ref);
-      setIsSignUp(true); // Switch to signup if coming from referral link
-    }
-  }, [searchParams]);
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -125,7 +116,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await signUp(formData.email, formData.password, formData.fullName, referralCode);
+        const { error } = await signUp(formData.email, formData.password, formData.fullName, referralCode.trim() || null);
         if (error) {
           if (error.message.includes('already registered')) {
             setApiError('This email is already registered. Please sign in instead.');
@@ -247,20 +238,7 @@ const Auth = () => {
             </p>
           </div>
 
-          {/* Referral Code Banner */}
-          {referralCode && isSignUp && (
-            <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <div className="flex items-center gap-3">
-                <Gift className="w-5 h-5 text-primary flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground">You've been referred!</p>
-                  <p className="text-sm text-muted-foreground">
-                    Sign up now and when you upgrade to a premium plan, your referrer will earn a bonus!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Referral Code Banner - removed, code is now entered in form */}
 
           {/* Verification Success Message */}
           {verificationSent && (
@@ -437,7 +415,28 @@ const Auth = () => {
                   )}
                 </div>
 
-                // Replace the checkbox section with this:
+                {/* Referral Code Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+                  <div className="relative">
+                    <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="referralCode"
+                      name="referralCode"
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="pl-10 font-mono tracking-widest"
+                      disabled={isSubmitting}
+                      maxLength={6}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Have a referral code? Enter it here to connect with your referrer.
+                  </p>
+                </div>
+
                 <div className="space-y-3">
                   <div className="flex items-start space-x-2">
                     <Checkbox

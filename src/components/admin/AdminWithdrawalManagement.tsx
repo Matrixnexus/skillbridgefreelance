@@ -103,7 +103,7 @@ const AdminWithdrawalManagement = () => {
     
     setIsProcessing(true);
     try {
-      const updateData: Partial<WithdrawalRequest> = {
+      const updateData: Record<string, any> = {
         status,
         admin_notes: adminNotes || null,
         reviewed_at: new Date().toISOString(),
