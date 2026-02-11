@@ -6,20 +6,14 @@
   <!-- HOME -->
   <url>
     <loc>https://newrevolution.co.ke/</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <!-- AUTH -->
   <url>
-    <loc>https://newrevolution.co.ke/login</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://newrevolution.co.ke/register</loc>
+    <loc>https://newrevolution.co.ke/auth</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -27,18 +21,14 @@
   <!-- CORE PLATFORMS -->
   <url>
     <loc>https://newrevolution.co.ke/jobs</loc>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://newrevolution.co.ke/remote-jobs</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://newrevolution.co.ke/freelance</loc>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -46,12 +36,14 @@
   <!-- EARNING FEATURES -->
   <url>
     <loc>https://newrevolution.co.ke/watch-and-earn</loc>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
 
   <url>
     <loc>https://newrevolution.co.ke/refer-and-earn</loc>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
@@ -59,24 +51,21 @@
   <!-- SKILL CATEGORIES -->
   <url>
     <loc>https://newrevolution.co.ke/academic-writing</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://newrevolution.co.ke/data-analysis</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://newrevolution.co.ke/web-development</loc>
+    <lastmod>2026-02-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
     <loc>https://newrevolution.co.ke/ai-training</loc>
+    <lastmod>2026-02-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- PRICING -->
+  <url>
+    <loc>https://newrevolution.co.ke/pricing</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -88,27 +77,15 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- TRUST & INFO -->
+  <!-- LEGAL -->
   <url>
-    <loc>https://newrevolution.co.ke/about</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://newrevolution.co.ke/contact</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://newrevolution.co.ke/terms</loc>
+    <loc>https://newrevolution.co.ke/terms-of-service</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://newrevolution.co.ke/privacy</loc>
+    <loc>https://newrevolution.co.ke/privacy-policy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
