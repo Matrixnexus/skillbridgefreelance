@@ -13,13 +13,14 @@ const Footer = () => {
     platform: [
       { name: "How It Works", href: "#how-it-works" },
       { name: "Browse Jobs", href: "/jobs" },
+      { name: "Remote Jobs", href: "/remote-jobs" },
       { name: "Pricing", href: "/pricing" },
-      { name: "Success Stories", href: "#testimonials" },
     ],
     freelancers: [
-      { name: "Create Account", href: "/auth" },
-      { name: "Freelancer Dashboard", href: "/dashboard" },
-      // Removed Skills Assessment and Help Center as requested
+      { name: "Academic Writing", href: "/academic-writing" },
+      { name: "AI Training", href: "/ai-training" },
+      { name: "Watch & Earn", href: "/watch-and-earn" },
+      { name: "Refer & Earn", href: "/refer-and-earn" },
     ],
     company: [
       // Removed all company links as requested

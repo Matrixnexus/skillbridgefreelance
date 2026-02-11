@@ -21,6 +21,11 @@ import Withdrawals from "./pages/Withdrawals";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
+import RemoteJobs from "./pages/RemoteJobs";
+import WatchAndEarn from "./pages/WatchAndEarn";
+import ReferAndEarn from "./pages/ReferAndEarn";
+import AcademicWriting from "./pages/AcademicWriting";
+import AITraining from "./pages/AITraining";
 
 // Configure QueryClient with better defaults
 const queryClient = new QueryClient({
@@ -58,6 +63,11 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/remote-jobs" element={<RemoteJobs />} />
+            <Route path="/watch-and-earn" element={<WatchAndEarn />} />
+            <Route path="/refer-and-earn" element={<ReferAndEarn />} />
+            <Route path="/academic-writing" element={<AcademicWriting />} />
+            <Route path="/ai-training" element={<AITraining />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
