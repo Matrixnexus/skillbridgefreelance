@@ -89,7 +89,7 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const userEmail = claimsData.claims.email as string;
 
-    const { plan, amount, callbackUrl } = await req.json();
+    const { plan, amount, callbackUrl, currency, phoneNumber } = await req.json();
 
     if (!plan || !amount || !callbackUrl) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -125,14 +125,14 @@ serve(async (req) => {
     const orderId = paymentData.id;
     const orderPayload = {
       id: orderId,
-      currency: "USD",
+      currency: currency || "KES",
       amount: Number(amount),
       description: `SkillBridge ${plan} membership`,
       callback_url: callbackUrl,
       notification_id: ipnId,
       billing_address: {
         email_address: userEmail,
-        phone_number: "",
+        phone_number: phoneNumber || "",
         country_code: "KE",
         first_name: userEmail.split("@")[0],
         middle_name: "",

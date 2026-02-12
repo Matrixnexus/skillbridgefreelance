@@ -39,11 +39,13 @@ const Checkout = () => {
   const [paypalMode, setPaypalMode] = useState<'direct' | 'link' | 'mobile'>('direct');
   const [showQRCode, setShowQRCode] = useState(false);
   const [pesapalPaymentId, setPesapalPaymentId] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   const planDetails = {
     regular: { 
       name: 'Regular', 
       price: 15, 
+      priceKsh: 1500,
       tier: 'regular',
       hostedButtonId: 'W3KQGR87LQRH8',
       paymentLink: 'https://www.paypal.com/ncp/payment/W3KQGR87LQRH8'
@@ -51,6 +53,7 @@ const Checkout = () => {
     pro: { 
       name: 'Pro', 
       price: 25, 
+      priceKsh: 2500,
       tier: 'pro',
       hostedButtonId: 'BGAP4WS73X4DQ',
       paymentLink: 'https://www.paypal.com/ncp/payment/BGAP4WS73X4DQ'
@@ -58,6 +61,7 @@ const Checkout = () => {
     vip: { 
       name: 'VIP', 
       price: 45, 
+      priceKsh: 4500,
       tier: 'vip',
       hostedButtonId: 'LZRR3X4VP4PQL',
       paymentLink: 'https://www.paypal.com/ncp/payment/LZRR3X4VP4PQL'
@@ -221,10 +225,18 @@ const Checkout = () => {
     try {
       const callbackUrl = `${window.location.origin}/checkout?plan=${plan}&pesapal=callback`;
 
+      if (!phoneNumber.trim()) {
+        setError('Please enter your M-Pesa phone number.');
+        setIsProcessing(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('pesapal-create-order', {
         body: {
           plan: currentPlan.tier,
-          amount: currentPlan.price,
+          amount: currentPlan.priceKsh,
+          currency: 'KES',
+          phoneNumber: phoneNumber.trim(),
           callbackUrl,
         },
       });
@@ -394,8 +406,12 @@ const Checkout = () => {
                 <CreditCard className="w-4 h-4 text-primary" />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-foreground">${currentPlan.price}.00</span>
-                <span className="text-sm text-muted-foreground">USD</span>
+                {paymentMethod === 'pesapal' ? (
+                  <span className="text-2xl font-bold text-foreground">KSH {currentPlan.priceKsh.toLocaleString()}</span>
+                ) : (
+                  <span className="text-2xl font-bold text-foreground">${currentPlan.price}.00</span>
+                )}
+                <span className="text-sm text-muted-foreground">{paymentMethod === 'pesapal' ? 'KES' : 'USD'}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">Monthly recurring payment - Cancel anytime</p>
             </div>
@@ -433,17 +449,34 @@ const Checkout = () => {
             <div className="space-y-4">
               {paymentMethod === 'pesapal' ? (
                 <div className="space-y-4">
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+                      M-Pesa Phone Number
+                    </label>
+                    <div className="relative">
+                      <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        id="phone"
+                        type="tel"
+                        placeholder="e.g. 0712345678 or 254712345678"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="flex h-12 w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Enter the phone number registered with M-Pesa</p>
+                  </div>
                   <Button
                     onClick={handlePesapalPayment}
-                    disabled={isProcessing}
+                    disabled={isProcessing || !phoneNumber.trim()}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 text-lg rounded-lg"
                   >
                     <Smartphone className="w-5 h-5 mr-2" />
-                    Pay with M-Pesa / Pesapal
+                    Pay KSH {currentPlan.priceKsh.toLocaleString()} with M-Pesa
                   </Button>
                   <div className="p-3 rounded-lg bg-muted/50 border border-border">
                     <p className="text-xs text-muted-foreground text-center">
-                      You'll be redirected to Pesapal to complete payment via M-Pesa STK Push, Airtel Money, or card.
+                      You'll receive an STK push on your phone to complete payment via M-Pesa, or be redirected to Pesapal for Airtel Money/card.
                     </p>
                   </div>
                 </div>
