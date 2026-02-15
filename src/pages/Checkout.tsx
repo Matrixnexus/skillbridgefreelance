@@ -45,7 +45,7 @@ const Checkout = () => {
     regular: { 
       name: 'Regular', 
       price: 15, 
-      priceKsh: 1500,
+      priceKsh: 500,
       tier: 'regular',
       hostedButtonId: 'W3KQGR87LQRH8',
       paymentLink: 'https://www.paypal.com/ncp/payment/W3KQGR87LQRH8'
@@ -53,7 +53,7 @@ const Checkout = () => {
     pro: { 
       name: 'Pro', 
       price: 25, 
-      priceKsh: 2500,
+      priceKsh: 750,
       tier: 'pro',
       hostedButtonId: 'BGAP4WS73X4DQ',
       paymentLink: 'https://www.paypal.com/ncp/payment/BGAP4WS73X4DQ'
@@ -61,7 +61,7 @@ const Checkout = () => {
     vip: { 
       name: 'VIP', 
       price: 45, 
-      priceKsh: 4500,
+      priceKsh: 999,
       tier: 'vip',
       hostedButtonId: 'LZRR3X4VP4PQL',
       paymentLink: 'https://www.paypal.com/ncp/payment/LZRR3X4VP4PQL'
