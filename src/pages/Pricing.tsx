@@ -12,8 +12,9 @@ const Pricing = () => {
   const plans = [
     {
       name: 'Regular',
-      price: 15,
-      period: 'month',
+      price: 6,
+      priceKsh: 750,
+      period: 'year',
       description: 'Perfect for getting started',
       icon: Zap,
       features: [
@@ -22,7 +23,7 @@ const Pricing = () => {
         'Standard review time',
         'Email support',
         'Basic earnings dashboard',
-        'Weekly payouts',
+        'Yearly billing',
       ],
       tier: 'regular',
       cta: 'Start Regular',
@@ -31,8 +32,9 @@ const Pricing = () => {
     },
     {
       name: 'Pro',
-      price: 25,
-      period: 'month',
+      price: 7,
+      priceKsh: 850,
+      period: 'year',
       description: 'Most popular for professionals',
       icon: Star,
       features: [
@@ -41,7 +43,7 @@ const Pricing = () => {
         'Priority review (24h)',
         'Priority email support',
         'Advanced analytics',
-        'Bi-weekly payouts',
+        'Yearly billing',
         'Skill badges & reputation',
       ],
       tier: 'pro',
@@ -51,8 +53,9 @@ const Pricing = () => {
     },
     {
       name: 'VIP',
-      price: 49,
-      period: 'month',
+      price: 8,
+      priceKsh: 999,
+      period: 'year',
       description: 'For serious professionals',
       icon: Crown,
       features: [
@@ -61,7 +64,7 @@ const Pricing = () => {
         'Express review (12h)',
         '24/7 priority support',
         'Premium analytics & insights',
-        'Weekly instant payouts',
+        'Yearly billing',
         'Featured profile badge',
         'Early access to new jobs',
       ],
@@ -127,9 +130,9 @@ const Pricing = () => {
                   <CreditCard className="w-6 h-6 text-blue-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Secure PayPal Payments</h3>
+                  <h3 className="font-semibold text-foreground mb-1">Secure Payments</h3>
                   <p className="text-muted-foreground">
-                    All plans are paid securely via PayPal. Your payment is processed directly through PayPal's secure system.
+                    Pay via PayPal (USD) or Pesapal/M-Pesa (KSH) for East African users. All payments are yearly and processed securely.
                   </p>
                 </div>
                 <div className="flex-shrink-0">
@@ -190,6 +193,9 @@ const Pricing = () => {
                     <span className="text-5xl font-bold text-foreground">${plan.price}</span>
                     <span className="text-muted-foreground">/{plan.period}</span>
                   </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    KSH {plan.priceKsh} <span className="text-xs">(for East African users)</span>
+                  </div>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
                       <CreditCard className="w-2.5 h-2.5 text-blue-400" />
@@ -247,7 +253,7 @@ const Pricing = () => {
                   What payment methods do you accept?
                 </h3>
                 <p className="text-muted-foreground">
-                  We accept secure payments via PayPal. You can pay with your PayPal balance, credit/debit card, or bank account through PayPal's secure checkout.
+                  We accept PayPal (USD) and Pesapal/M-Pesa (KSH) for East African users. You can pay with your PayPal balance, credit/debit card, M-Pesa, or Airtel Money.
                 </p>
               </div>
               <div className="glass-card p-6">
@@ -255,7 +261,7 @@ const Pricing = () => {
                   How does the payment process work?
                 </h3>
                 <p className="text-muted-foreground">
-                  When you select a plan, you'll be redirected to PayPal's secure checkout. After payment confirmation, your membership will be activated automatically.
+                  When you select a plan, you'll choose PayPal or Pesapal as your payment gateway. After payment confirmation, your yearly membership will be activated automatically.
                 </p>
               </div>
               <div className="glass-card p-6">

@@ -44,23 +44,23 @@ const Checkout = () => {
   const planDetails = {
     regular: { 
       name: 'Regular', 
-      price: 15, 
-      priceKsh: 500,
+      price: 6, 
+      priceKsh: 750,
       tier: 'regular',
       hostedButtonId: 'W3KQGR87LQRH8',
       paymentLink: 'https://www.paypal.com/ncp/payment/W3KQGR87LQRH8'
     },
     pro: { 
       name: 'Pro', 
-      price: 25, 
-      priceKsh: 750,
+      price: 7, 
+      priceKsh: 850,
       tier: 'pro',
       hostedButtonId: 'BGAP4WS73X4DQ',
       paymentLink: 'https://www.paypal.com/ncp/payment/BGAP4WS73X4DQ'
     },
     vip: { 
       name: 'VIP', 
-      price: 45, 
+      price: 8, 
       priceKsh: 999,
       tier: 'vip',
       hostedButtonId: 'LZRR3X4VP4PQL',
@@ -291,7 +291,7 @@ const Checkout = () => {
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Complete Your Purchase</h1>
             <p className="text-muted-foreground">
-              Upgrade to {currentPlan.name} membership - ${currentPlan.price}/month
+              Upgrade to {currentPlan.name} membership - ${currentPlan.price}/year
             </p>
           </div>
 
@@ -301,7 +301,7 @@ const Checkout = () => {
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold text-foreground">{currentPlan.name} Membership</span>
                 <span className="text-3xl font-bold text-primary">
-                  ${currentPlan.price}<span className="text-sm text-muted-foreground font-normal">/month</span>
+                  ${currentPlan.price}<span className="text-sm text-muted-foreground font-normal">/year</span>
                 </span>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
@@ -413,7 +413,7 @@ const Checkout = () => {
                 )}
                 <span className="text-sm text-muted-foreground">{paymentMethod === 'pesapal' ? 'KES' : 'USD'}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Monthly recurring payment - Cancel anytime</p>
+              <p className="text-xs text-muted-foreground mt-1">Yearly payment - Cancel anytime</p>
             </div>
 
             {error && (
