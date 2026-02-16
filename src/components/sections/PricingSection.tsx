@@ -10,8 +10,9 @@ const PricingSection = () => {
   const plans = [
     {
       name: "Regular",
-      price: 15,
-      period: "month",
+      price: 6,
+      priceKsh: 750,
+      period: "year",
       description: "Perfect for getting started",
       icon: Zap,
       features: [
@@ -28,8 +29,9 @@ const PricingSection = () => {
     },
     {
       name: "Pro",
-      price: 25,
-      period: "month",
+      price: 7,
+      priceKsh: 850,
+      period: "year",
       description: "Most popular for professionals",
       icon: Star,
       features: [
@@ -47,8 +49,9 @@ const PricingSection = () => {
     },
     {
       name: "VIP",
-      price: 45,
-      period: "month",
+      price: 8,
+      priceKsh: 999,
+      period: "year",
       description: "For serious professionals",
       icon: Crown,
       features: [
@@ -137,6 +140,9 @@ const PricingSection = () => {
                 <div className="flex items-baseline gap-1">
                   <span className="text-5xl font-bold text-foreground">${plan.price}</span>
                   <span className="text-muted-foreground">/{plan.period}</span>
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  KSH {plan.priceKsh} <span className="text-xs">(for East African users)</span>
                 </div>
               </div>
 

@@ -10,18 +10,18 @@ import { ArrowRight, Users, DollarSign, Gift, CheckCircle2, Share2, UserPlus, Wa
 
 const ReferAndEarn = () => {
   const faqs = [
-    { question: "How does the SkillBridge referral program work?", answer: "When you sign up and activate a membership (Regular, Pro, or VIP), you receive a unique 6-digit referral code. Share this code with friends. When they create an account and enter your code during sign-up, $5 is added to your pending earnings. Once they activate a paid membership, your $5 bonus is confirmed and available for withdrawal." },
+    { question: "How does the SkillBridge referral program work?", answer: "When you sign up and activate a membership (Regular, Pro, or VIP), you receive a unique 6-digit referral code. Share this code with friends. When they create an account and enter your code during sign-up, a bonus is added to your pending earnings. Once they activate a paid membership, your bonus is confirmed and available for withdrawal." },
     { question: "Where do I find my referral code?", answer: "Your 6-digit referral code is displayed on your Dashboard under the Referrals section. You must have an active paid membership (Regular, Pro, or VIP) to view and share your code." },
-    { question: "How much do I earn per referral?", answer: "You earn a flat $5 for every successful referral. A referral is considered successful once the person you referred activates a paid membership. There's no limit to how many people you can refer." },
+    { question: "How much do I earn per referral?", answer: "Your bonus depends on the plan your referral subscribes to: $0.50 (KSH 50) for Regular, $1 (KSH 100) for Pro, and $2 (KSH 200) for VIP. There's no limit to how many people you can refer." },
     { question: "When can I withdraw my referral earnings?", answer: "Referral earnings are credited to your account once the referred person pays for a membership. You can then withdraw them alongside your other earnings via M-Pesa, PayPal, or bank transfer once you meet the minimum withdrawal amount." },
-    { question: "Is there a limit to how many people I can refer?", answer: "No! You can refer unlimited people. The more active members you bring to SkillBridge, the more you earn. Some of our top referrers earn hundreds of dollars monthly through referrals alone." },
+    { question: "Is there a limit to how many people I can refer?", answer: "No! You can refer unlimited people. The more active members you bring to SkillBridge, the more you earn." },
   ];
 
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Refer & Earn $5 Per Referral | SkillBridge"
-        description="Earn $5 for every friend who joins SkillBridge through your referral code. Unlimited referrals, real cash withdrawals. Share your 6-digit code and start earning today."
+        title="Refer & Earn Up to $2 Per Referral | SkillBridge"
+        description="Earn up to $2 for every friend who joins SkillBridge through your referral code. Unlimited referrals, real cash withdrawals. Share your 6-digit code and start earning today."
         canonical="https://newrevolution.co.ke/refer-and-earn"
       />
       <SchemaMarkup schema={{
@@ -40,13 +40,13 @@ const ReferAndEarn = () => {
           <section className="mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/50 border border-border/50 mb-6">
               <Gift className="w-4 h-4 text-primary" />
-              <span className="text-sm text-muted-foreground">$5 Per Successful Referral</span>
+              <span className="text-sm text-muted-foreground">Up to $2 Per Successful Referral</span>
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Refer Friends & <span className="gradient-text">Earn $5 Each</span>
+              Refer Friends & <span className="gradient-text">Earn Up to $2 Each</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-3xl mb-8 text-balance">
-              Your network is worth money. SkillBridge's referral program rewards you $5 for every person who joins through your unique 6-digit code. No cap on referrals, no complicated rules — just share, they join, and you earn.
+              Your network is worth money. SkillBridge's referral program rewards you up to $2 (KSH 200) for every person who joins through your unique 6-digit code. No cap on referrals, no complicated rules — just share, they join, and you earn.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button variant="hero" size="xl" className="group" asChild>
@@ -66,7 +66,7 @@ const ReferAndEarn = () => {
               {[
                 { icon: Share2, step: "1", title: "Share Your Code", desc: "Find your unique 6-digit code on your dashboard. Share it via WhatsApp, social media, or in person." },
                 { icon: UserPlus, step: "2", title: "They Sign Up", desc: "Your friend creates a SkillBridge account and enters your referral code during registration." },
-                { icon: Wallet, step: "3", title: "You Get Paid", desc: "$5 appears as pending. Once they activate a paid membership, the $5 is confirmed and withdrawable." },
+                { icon: Wallet, step: "3", title: "You Get Paid", desc: "Your bonus appears as pending ($0.50–$2 based on their plan). Once they activate a paid membership, the bonus is confirmed and withdrawable." },
               ].map((s, i) => (
                 <div key={i} className="glass-card p-6 text-center">
                   <s.icon className="w-10 h-10 text-primary mx-auto mb-4" />
@@ -81,8 +81,8 @@ const ReferAndEarn = () => {
           <section className="mb-16">
             <h2 className="text-3xl font-bold text-foreground mb-6">Why SkillBridge Referrals Are Worth It</h2>
             <div className="text-muted-foreground space-y-4">
-              <p>Most referral programs give you pennies or worthless points. SkillBridge is different. You earn real dollars — $5 per successful referral — that you can withdraw as actual cash via M-Pesa, PayPal, or bank transfer.</p>
-              <p>There's also no cap. Refer 10 friends, earn $50. Refer 100, earn $500. Some of our most active community members treat referrals as a significant income stream alongside their freelance work.</p>
+              <p>Most referral programs give you pennies or worthless points. SkillBridge is different. You earn real dollars — up to $2 per successful referral — that you can withdraw as actual cash via M-Pesa, PayPal, or bank transfer.</p>
+              <p>There's also no cap. Refer 10 friends and earn real money. Our most active community members treat referrals as a significant income stream alongside their freelance work.</p>
               <p>And it's mutually beneficial. The people you refer gain access to a premium freelancing platform with curated jobs, guaranteed payments, and real earning potential. You're not spamming — you're sharing an opportunity.</p>
             </div>
           </section>
@@ -126,7 +126,7 @@ const ReferAndEarn = () => {
 
           <section className="glass-card p-10 text-center">
             <h2 className="text-3xl font-bold text-foreground mb-4">Start Referring, Start Earning</h2>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">Create your SkillBridge account, activate a membership, and get your unique 6-digit referral code. Every friend you bring earns you $5.</p>
+            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">Create your SkillBridge account, activate a membership, and get your unique 6-digit referral code. Every friend you bring earns you up to $2 (KSH 200).</p>
             <Button variant="hero" size="xl" className="group" asChild>
               <Link to="/auth">
                 Join SkillBridge Now <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

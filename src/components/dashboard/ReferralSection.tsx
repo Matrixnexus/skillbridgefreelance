@@ -88,7 +88,7 @@ const ReferralSection = () => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-foreground">Referral Program</h2>
-            <p className="text-sm text-muted-foreground">Earn $5 for every friend you refer</p>
+            <p className="text-sm text-muted-foreground">Earn up to $2 for every friend you refer</p>
           </div>
         </div>
         
@@ -98,12 +98,12 @@ const ReferralSection = () => {
             <div>
               <h3 className="font-semibold text-foreground mb-2">Upgrade to See Your Referral Code</h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Your unique referral code has been generated! Activate your account with a premium plan to reveal it and start earning $5 for every friend who subscribes.
+                Your unique referral code has been generated! Activate your account with a premium plan to reveal it and start earning for every friend who subscribes.
               </p>
               <ul className="space-y-2 text-sm mb-4">
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span>$5 bonus per successful referral</span>
+                  <span>$0.50 for Regular, $1 for Pro, $2 for VIP referrals</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
@@ -173,7 +173,7 @@ const ReferralSection = () => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-foreground">Your Referral Code</h2>
-            <p className="text-sm text-muted-foreground">Share this code with friends to earn $5 per referral</p>
+            <p className="text-sm text-muted-foreground">Share this code with friends to earn up to $2 per referral</p>
           </div>
         </div>
 
@@ -219,11 +219,11 @@ const ReferralSection = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                  <span>$5 appears as pending in your account</span>
+                  <span>Bonus appears as pending in your account ($0.50–$2 based on their plan)</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
-                  <span>Once they pay for a subscription, your $5 is credited</span>
+                  <span>Once they pay for a subscription, your bonus is credited</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">5</span>
@@ -265,7 +265,7 @@ const ReferralSection = () => {
                   <p className={`font-semibold ${
                     referral.status === 'credited' ? 'text-green-400' : 'text-yellow-400'
                   }`}>
-                    {referral.status === 'credited' ? `+$${referral.bonus_amount}` : '$5 Pending'}
+                    {referral.status === 'credited' ? `+$${referral.bonus_amount}` : 'Pending'}
                   </p>
                   <p className={`text-xs px-2 py-0.5 rounded-full inline-block ${
                     referral.status === 'credited' 
