@@ -238,8 +238,6 @@ const Auth = () => {
             </p>
           </div>
 
-          {/* Referral Code Banner - removed, code is now entered in form */}
-
           {/* Verification Success Message */}
           {verificationSent && (
             <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200">
@@ -415,7 +413,7 @@ const Auth = () => {
                   )}
                 </div>
 
-                {/* Referral Code Input */}
+                {/* Referral Code Input - Now accepts letters and numbers */}
                 <div className="space-y-2">
                   <Label htmlFor="referralCode">Referral Code (Optional)</Label>
                   <div className="relative">
@@ -424,12 +422,15 @@ const Auth = () => {
                       id="referralCode"
                       name="referralCode"
                       type="text"
-                      placeholder="Enter 6-digit code"
+                      placeholder="Enter referral code"
                       value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      onChange={(e) => {
+                        // Remove any special characters but keep letters and numbers
+                        const alphanumeric = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+                        setReferralCode(alphanumeric);
+                      }}
                       className="pl-10 font-mono tracking-widest"
                       disabled={isSubmitting}
-                      maxLength={6}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -544,7 +545,7 @@ const Auth = () => {
           </p>
           <div className="flex items-center justify-center gap-6 md:gap-8 text-sm text-muted-foreground">
             <div>
-              <div className="text-xl md:text-2xl font-bold text-foreground">$2M+</div>
+              <div className="text-xl md:text-2xl font-bold text-foreground">$40K+</div>
               <div>Paid to freelancers</div>
             </div>
             <div className="w-px h-8 bg-border" />
