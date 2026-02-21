@@ -4,10 +4,10 @@ import { ArrowRight, Shield, CheckCircle2 } from "lucide-react";
 
 const HeroSection = () => {
   const stats = [
-    { value: "750K+", label: "Active Freelancers" },
-    { value: "12K+", label: "Jobs Completed" },
+    { value: "2K+", label: "Active Freelancers" },
+    { value: "10K+", label: "Jobs Completed" },
     { value: "98%", label: "Satisfaction Rate" },
-    { value: "$2M+", label: "Paid to Freelancers" },
+    { value: "$40K+", label: "Paid to Freelancers" },
   ];
 
   const features = [
