@@ -41,7 +41,12 @@ import {
   Download,
   Filter,
   Database,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { uploadToCloudinary, formatFileSize, downloadFile } from '@/utils/cloudinary';
 import AdminWithdrawalManagement from '@/components/admin/AdminWithdrawalManagement';
 
@@ -897,22 +902,49 @@ const Admin = () => {
                     
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <Select
-                        value={jobForm.category_id}
-                        onValueChange={(value) => setJobForm({ ...jobForm, category_id: value })}
-                        disabled={isUploading}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            disabled={isUploading}
+                            className={cn(
+                              "w-full justify-between",
+                              !jobForm.category_id && "text-muted-foreground"
+                            )}
+                          >
+                            {jobForm.category_id
+                              ? categories.find((c) => c.id === jobForm.category_id)?.name
+                              : "Select category"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0 z-[9999]" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search category..." />
+                            <CommandList>
+                              <CommandEmpty>No category found.</CommandEmpty>
+                              <CommandGroup>
+                                {categories.map((category) => (
+                                  <CommandItem
+                                    key={category.id}
+                                    value={category.name}
+                                    onSelect={() => setJobForm({ ...jobForm, category_id: category.id })}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        jobForm.category_id === category.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {category.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                   
