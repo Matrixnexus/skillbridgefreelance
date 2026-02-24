@@ -88,7 +88,7 @@ const ReferralSection = () => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-foreground">Referral Program</h2>
-            <p className="text-sm text-muted-foreground">Earn up to $2 for every friend you refer</p>
+            <p className="text-sm text-muted-foreground">Earn up to KES 400 for every friend you refer</p>
           </div>
         </div>
         
@@ -103,7 +103,7 @@ const ReferralSection = () => {
               <ul className="space-y-2 text-sm mb-4">
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span>$0.50 for Regular, $1 for Pro, $2 for VIP referrals</span>
+                  <span>KES 200 for Regular, KES 300 for Pro, KES 400 for VIP referrals</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
@@ -111,7 +111,7 @@ const ReferralSection = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span>Withdraw once you reach $30</span>
+                  <span>Withdraw once you reach KES 3,000</span>
                 </li>
               </ul>
               <Button variant="hero" asChild>
@@ -135,7 +135,7 @@ const ReferralSection = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Referral Earnings</p>
-              <p className="text-2xl font-bold text-green-400">${totalReferralEarnings.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-green-400">KES {totalReferralEarnings.toFixed(0)}</p>
             </div>
           </div>
         </div>
@@ -173,7 +173,7 @@ const ReferralSection = () => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-foreground">Your Referral Code</h2>
-            <p className="text-sm text-muted-foreground">Share this code with friends to earn up to $2 per referral</p>
+            <p className="text-sm text-muted-foreground">Share this code with friends to earn up to KES 400 per referral</p>
           </div>
         </div>
 
@@ -219,7 +219,7 @@ const ReferralSection = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
-                  <span>Bonus appears as pending in your account ($0.50–$2 based on their plan)</span>
+                  <span>Bonus appears as pending in your account (KES 200–400 based on their plan)</span>
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
@@ -227,7 +227,7 @@ const ReferralSection = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">5</span>
-                  <span>Withdraw when you reach $30</span>
+                  <span>Withdraw when you reach KES 3,000</span>
                 </div>
               </div>
             </div>
@@ -265,7 +265,7 @@ const ReferralSection = () => {
                   <p className={`font-semibold ${
                     referral.status === 'credited' ? 'text-green-400' : 'text-yellow-400'
                   }`}>
-                    {referral.status === 'credited' ? `+$${referral.bonus_amount}` : 'Pending'}
+                    {referral.status === 'credited' ? `+KES ${referral.bonus_amount}` : 'Pending'}
                   </p>
                   <p className={`text-xs px-2 py-0.5 rounded-full inline-block ${
                     referral.status === 'credited' 
