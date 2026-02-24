@@ -16,6 +16,8 @@ import {
   Shield,
   Gift,
   Download,
+  Play,
+  Heart,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -43,6 +45,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Available Jobs', href: '/jobs', icon: Briefcase },
+    { name: 'Watch & Earn', href: '/watch-tasks', icon: Play },
+    { name: 'Follow & Earn', href: '/follow-tasks', icon: Heart },
     { name: 'My Submissions', href: '/submissions', icon: FileText },
     { name: 'Earnings', href: '/earnings', icon: Wallet },
     { name: 'Referrals', href: '/referrals', icon: Gift },

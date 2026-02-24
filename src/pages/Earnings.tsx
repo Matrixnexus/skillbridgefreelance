@@ -36,7 +36,7 @@ interface SubmissionSummary {
   rejected: number;
 }
 
-const MIN_WITHDRAWAL = 250;
+const MIN_WITHDRAWAL = 100;
 const WITHDRAWAL_INTERVAL_DAYS = 14;
 
 const Earnings = () => {
