@@ -47,7 +47,7 @@ interface WithdrawalRequest {
 
 // Withdrawal limits
 const REFERRAL_WITHDRAWAL_MIN = 30;
-const TASK_WITHDRAWAL_MIN = 250;
+const TASK_WITHDRAWAL_MIN = 100;
 
 const WithdrawalSection = () => {
   const { user, profile, refreshProfile } = useAuth();

@@ -23,6 +23,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import RemoteJobs from "./pages/RemoteJobs";
 import WatchAndEarn from "./pages/WatchAndEarn";
+import WatchAndEarnTasks from "./pages/WatchAndEarnTasks";
+import FollowAndEarnTasks from "./pages/FollowAndEarn";
 import ReferAndEarn from "./pages/ReferAndEarn";
 import AcademicWriting from "./pages/AcademicWriting";
 import AITraining from "./pages/AITraining";
@@ -65,6 +67,8 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/remote-jobs" element={<RemoteJobs />} />
             <Route path="/watch-and-earn" element={<WatchAndEarn />} />
+            <Route path="/watch-tasks" element={<WatchAndEarnTasks />} />
+            <Route path="/follow-tasks" element={<FollowAndEarnTasks />} />
             <Route path="/refer-and-earn" element={<ReferAndEarn />} />
             <Route path="/academic-writing" element={<AcademicWriting />} />
             <Route path="/ai-training" element={<AITraining />} />
