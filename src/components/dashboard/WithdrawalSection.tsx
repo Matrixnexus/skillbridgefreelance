@@ -47,7 +47,7 @@ interface WithdrawalRequest {
 
 // Withdrawal limits
 const REFERRAL_WITHDRAWAL_MIN = 0;
-const TASK_WITHDRAWAL_MIN = 100;
+const TASK_WITHDRAWAL_MIN = 0;
 
 const WithdrawalSection = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -111,10 +111,6 @@ const WithdrawalSection = () => {
       return;
     }
     
-    if (balanceType === 'task' && amountNum < TASK_WITHDRAWAL_MIN) {
-      setError(`Minimum withdrawal for task balance is $${TASK_WITHDRAWAL_MIN}`);
-      return;
-    }
     
     if (amountNum > currentBalance) {
       setError(`Insufficient balance. You have $${currentBalance.toFixed(2)} available`);
@@ -272,14 +268,14 @@ const WithdrawalSection = () => {
                 <p className="text-sm text-muted-foreground">Task Balance</p>
                 <p className="text-2xl font-bold text-foreground">${taskBalance.toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Min withdrawal: ${TASK_WITHDRAWAL_MIN}
+                  No minimum withdrawal
                 </p>
               </div>
             </div>
             <Button
               size="sm"
               variant="outline"
-              disabled={taskBalance < TASK_WITHDRAWAL_MIN || hasPendingWithdrawal('task')}
+              disabled={taskBalance <= 0 || hasPendingWithdrawal('task')}
               onClick={() => {
                 setBalanceType('task');
                 setIsDialogOpen(true);
@@ -306,7 +302,7 @@ const WithdrawalSection = () => {
             <p className="font-medium text-foreground mb-1">Withdrawal Information</p>
             <ul className="space-y-1 text-muted-foreground">
               <li>• Referral withdrawals are <strong>instant</strong> — no minimum amount</li>
-              <li>• Task earnings have a minimum withdrawal of ${TASK_WITHDRAWAL_MIN}</li>
+              <li>• Task earnings — no minimum withdrawal amount</li>
               <li>• Task withdrawals require admin approval (1-3 business days)</li>
             </ul>
           </div>
