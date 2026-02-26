@@ -235,8 +235,8 @@ const WithdrawalSection = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Referral Balance</p>
                 <p className="text-2xl font-bold text-foreground">${referralBalance.toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Min withdrawal: ${REFERRAL_WITHDRAWAL_MIN}
+                <p className="text-xs text-green-400 mt-1 font-medium">
+                  ⚡ Instant withdrawal • Min: ${REFERRAL_WITHDRAWAL_MIN}
                 </p>
               </div>
             </div>
@@ -305,10 +305,9 @@ const WithdrawalSection = () => {
           <div className="text-sm">
             <p className="font-medium text-foreground mb-1">Withdrawal Information</p>
             <ul className="space-y-1 text-muted-foreground">
-              <li>• Referral earnings have a minimum withdrawal of ${REFERRAL_WITHDRAWAL_MIN}</li>
+              <li>• Referral withdrawals are <strong>instant</strong> — min ${REFERRAL_WITHDRAWAL_MIN}</li>
               <li>• Task earnings have a minimum withdrawal of ${TASK_WITHDRAWAL_MIN}</li>
-              <li>• All withdrawals require admin approval</li>
-              <li>• Processing typically takes 1-3 business days</li>
+              <li>• Task withdrawals require admin approval (1-3 business days)</li>
             </ul>
           </div>
         </div>
@@ -377,7 +376,7 @@ const WithdrawalSection = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+    <div className="space-y-4 py-4">
             {error && (
               <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -406,73 +405,70 @@ const WithdrawalSection = () => {
                 />
               </div>
               <div className="flex gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAmount((currentBalance * 0.25).toFixed(2))}
-                >
-                  25%
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAmount((currentBalance * 0.5).toFixed(2))}
-                >
-                  50%
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAmount((currentBalance * 0.75).toFixed(2))}
-                >
-                  75%
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setAmount(currentBalance.toFixed(2))}
-                >
-                  Max
-                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAmount((currentBalance * 0.25).toFixed(2))}>25%</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAmount((currentBalance * 0.5).toFixed(2))}>50%</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAmount((currentBalance * 0.75).toFixed(2))}>75%</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAmount(currentBalance.toFixed(2))}>Max</Button>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <Select value={paymentMethod} onValueChange={(val) => { setPaymentMethod(val); setPaymentDetails(''); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="mpesa">M-Pesa (Safaricom)</SelectItem>
+                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
                   <SelectItem value="paypal">PayPal</SelectItem>
-                  <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Payment Details</Label>
-              <Textarea
-                placeholder={
-                  paymentMethod === 'bank_transfer' 
-                    ? 'Enter your bank account details (Bank name, Account number, Account holder name, SWIFT/BIC code if international)'
-                    : paymentMethod === 'paypal'
-                    ? 'Enter your PayPal email address'
-                    : paymentMethod === 'crypto'
-                    ? 'Enter your wallet address and network (e.g., USDT TRC20)'
-                    : 'Enter your mobile money details (Phone number, Provider)'
-                }
-                value={paymentDetails}
-                onChange={(e) => setPaymentDetails(e.target.value)}
-                rows={4}
-              />
-            </div>
+            {/* Conditional payment detail fields */}
+            {(paymentMethod === 'mpesa' || paymentMethod === 'airtel_money') && (
+              <div className="space-y-2">
+                <Label>Phone Number</Label>
+                <Input
+                  type="tel"
+                  placeholder={paymentMethod === 'mpesa' ? 'e.g. 0712345678' : 'e.g. 0733456789'}
+                  value={paymentDetails}
+                  onChange={(e) => setPaymentDetails(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the {paymentMethod === 'mpesa' ? 'Safaricom' : 'Airtel'} number to receive funds
+                </p>
+              </div>
+            )}
+
+            {paymentMethod === 'paypal' && (
+              <div className="space-y-2">
+                <Label>PayPal Email</Label>
+                <Input
+                  type="email"
+                  placeholder="your-email@example.com"
+                  value={paymentDetails}
+                  onChange={(e) => setPaymentDetails(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the email linked to your PayPal account
+                </p>
+              </div>
+            )}
+
+            {paymentMethod === 'bank_transfer' && (
+              <div className="space-y-2">
+                <Label>Bank Details</Label>
+                <Textarea
+                  placeholder="Bank name, Account number, Account holder name, Branch"
+                  value={paymentDetails}
+                  onChange={(e) => setPaymentDetails(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

@@ -141,8 +141,9 @@ const PricingSection = () => {
                   <span className="text-5xl font-bold text-foreground">${plan.price}</span>
                   <span className="text-muted-foreground">/{plan.period}</span>
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  KSH {plan.priceKsh} <span className="text-xs">(for East African users)</span>
+                <div className="mt-1">
+                  <span className="text-2xl font-bold text-foreground">KSH {plan.priceKsh}</span>
+                  <span className="text-sm text-muted-foreground ml-1">(M-Pesa)</span>
                 </div>
               </div>
 
