@@ -46,7 +46,7 @@ interface WithdrawalRequest {
 }
 
 // Withdrawal limits
-const REFERRAL_WITHDRAWAL_MIN = 30;
+const REFERRAL_WITHDRAWAL_MIN = 0;
 const TASK_WITHDRAWAL_MIN = 100;
 
 const WithdrawalSection = () => {
@@ -111,8 +111,8 @@ const WithdrawalSection = () => {
       return;
     }
     
-    if (amountNum < minWithdrawal) {
-      setError(`Minimum withdrawal for ${balanceType} balance is $${minWithdrawal}`);
+    if (balanceType === 'task' && amountNum < TASK_WITHDRAWAL_MIN) {
+      setError(`Minimum withdrawal for task balance is $${TASK_WITHDRAWAL_MIN}`);
       return;
     }
     
@@ -236,14 +236,14 @@ const WithdrawalSection = () => {
                 <p className="text-sm text-muted-foreground">Referral Balance</p>
                 <p className="text-2xl font-bold text-foreground">${referralBalance.toFixed(2)}</p>
                 <p className="text-xs text-green-400 mt-1 font-medium">
-                  ⚡ Instant withdrawal • Min: ${REFERRAL_WITHDRAWAL_MIN}
+                  ⚡ Instant withdrawal • No minimum
                 </p>
               </div>
             </div>
             <Button
               size="sm"
               variant="outline"
-              disabled={referralBalance < REFERRAL_WITHDRAWAL_MIN || hasPendingWithdrawal('referral')}
+              disabled={referralBalance <= 0 || hasPendingWithdrawal('referral')}
               onClick={() => {
                 setBalanceType('referral');
                 setIsDialogOpen(true);
@@ -305,7 +305,7 @@ const WithdrawalSection = () => {
           <div className="text-sm">
             <p className="font-medium text-foreground mb-1">Withdrawal Information</p>
             <ul className="space-y-1 text-muted-foreground">
-              <li>• Referral withdrawals are <strong>instant</strong> — min ${REFERRAL_WITHDRAWAL_MIN}</li>
+              <li>• Referral withdrawals are <strong>instant</strong> — no minimum amount</li>
               <li>• Task earnings have a minimum withdrawal of ${TASK_WITHDRAWAL_MIN}</li>
               <li>• Task withdrawals require admin approval (1-3 business days)</li>
             </ul>

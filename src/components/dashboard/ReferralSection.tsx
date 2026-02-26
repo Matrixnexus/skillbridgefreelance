@@ -111,7 +111,7 @@ const ReferralSection = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span>Withdraw once you reach KES 3,000</span>
+                  <span>Withdraw instantly — no minimum amount</span>
                 </li>
               </ul>
               <Button variant="hero" asChild>
@@ -227,7 +227,7 @@ const ReferralSection = () => {
                 </div>
                 <div className="flex items-start gap-3">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">5</span>
-                  <span>Withdraw when you reach KES 3,000</span>
+                  <span>Withdraw instantly — no minimum amount</span>
                 </div>
               </div>
             </div>
