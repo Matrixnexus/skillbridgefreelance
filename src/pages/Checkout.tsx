@@ -35,7 +35,7 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedButton, setCopiedButton] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'pesapal'>('paypal');
+  const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'pesapal'>('pesapal');
   const [paypalMode, setPaypalMode] = useState<'direct' | 'link' | 'mobile'>('direct');
   const [showQRCode, setShowQRCode] = useState(false);
   const [pesapalPaymentId, setPesapalPaymentId] = useState<string | null>(null);
