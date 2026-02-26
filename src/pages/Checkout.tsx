@@ -350,14 +350,19 @@ const Checkout = () => {
                 } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="font-bold text-green-600 text-lg">Pesapal</span>
-                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">M-Pesa</span>
-                  {paymentMethod === 'pesapal' && <Check className="w-4 h-4 text-green-500 ml-auto" />}
+                  <span className="font-bold text-green-600 text-xl">Pesapal</span>
+                  {paymentMethod === 'pesapal' && <Check className="w-5 h-5 text-green-500 ml-auto" />}
                 </div>
-                <p className="text-sm text-muted-foreground">Pay with M-Pesa, Airtel Money, cards</p>
-                <div className="mt-2 flex items-center gap-2">
+                <p className="text-sm font-medium text-foreground mb-2">Mobile Money & Cards</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <span className="text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2.5 py-1 rounded-full">🟢 Safaricom M-Pesa</span>
+                  <span className="text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2.5 py-1 rounded-full">🔴 Airtel Money</span>
+                  <span className="text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full">💳 Visa/Mastercard</span>
+                  <span className="text-xs font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2.5 py-1 rounded-full">🏦 Bank Transfer</span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
                   <Smartphone className="w-4 h-4 text-green-600" />
-                  <span className="text-xs text-muted-foreground">STK Push supported</span>
+                  <span className="text-xs font-medium text-muted-foreground">STK Push • Instant confirmation</span>
                 </div>
               </button>
             </div>

@@ -449,14 +449,24 @@ const AdminWithdrawalManagement = () => {
               {/* Payment Details */}
               <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <p className="text-sm p-3 rounded-lg bg-secondary capitalize">
-                  {selectedWithdrawal.payment_method.replace('_', ' ')}
+                <p className="text-sm p-3 rounded-lg bg-secondary capitalize font-medium">
+                  {selectedWithdrawal.payment_method === 'mpesa' ? '📱 M-Pesa (Safaricom)' 
+                    : selectedWithdrawal.payment_method === 'airtel_money' ? '📱 Airtel Money'
+                    : selectedWithdrawal.payment_method === 'paypal' ? '💰 PayPal'
+                    : selectedWithdrawal.payment_method === 'bank_transfer' ? '🏦 Bank Transfer'
+                    : selectedWithdrawal.payment_method.replace('_', ' ')}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Payment Details</Label>
-                <p className="text-sm p-3 rounded-lg bg-secondary whitespace-pre-wrap">
+                <Label>
+                  {selectedWithdrawal.payment_method === 'mpesa' || selectedWithdrawal.payment_method === 'airtel_money' 
+                    ? 'Phone Number' 
+                    : selectedWithdrawal.payment_method === 'paypal' 
+                    ? 'PayPal Email' 
+                    : 'Payment Details'}
+                </Label>
+                <p className="text-sm p-3 rounded-lg bg-secondary whitespace-pre-wrap font-mono font-medium text-foreground">
                   {selectedWithdrawal.payment_details?.details || 'No details provided'}
                 </p>
               </div>
